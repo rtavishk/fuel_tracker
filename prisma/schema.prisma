@@ -1,0 +1,158 @@
+// Prisma Schema for BAIC BJ30e Fuel & Drive Tracker
+// Generated for persistent relational storage (PostgreSQL / SQLite / MySQL compatible)
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// User profile and authentication record
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  passwordHash  String?
+  name          String?
+  avatarUrl     String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  sessions      Session[]
+  vehicleConfigs VehicleConfig[]
+  fuelEntries   FuelEntry[]
+  dailyTrips    DailyTrip[]
+  preTripLogs   PreTripLog[]
+  aiAudits      AiAuditReport[]
+
+  @@map("users")
+}
+
+/// Database-backed user sessions
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Configuration settings for the vehicle profile (e.g. BAIC BJ30e)
+model VehicleConfig {
+  id                    String      @id @default(cuid())
+  userId                String
+  name                  String      @default("BAIC BJ30e")
+  model                 String      @default("BJ30e Hybrid Dual-Motor")
+  tankCapacityLitres    Float       @default(52.0)
+  fullRangeBenchmarkKm  Float?      // Custom full tank benchmark override in km (e.g. 665 km)
+  currency              String      @default("Rs")
+  distanceUnit          String      @default("km")
+  volumeUnit            String      @default("L")
+  theme                 String      @default("system") // "system" | "dark" | "light"
+  authEnabled           Boolean     @default(false)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fuelEntries           FuelEntry[]
+  dailyTrips            DailyTrip[]
+  preTripLogs           PreTripLog[]
+
+  @@index([userId])
+  @@map("vehicle_configs")
+}
+
+/// Core Fueling and Cluster Range Record
+/// Tracks pre-fuel and post-fueling remaining-range (DTE) cluster values
+model FuelEntry {
+  id                   String        @id @default(cuid())
+  userId               String
+  vehicleConfigId      String
+  
+  date                 DateTime      // Date & time of the refuel event
+  amountPaid           Float         // Total amount paid in configured currency (e.g., Rs 12,000)
+  pricePerLitre        Float         // Unit price of fuel (e.g., Rs 310.00/L)
+  litresFueled         Float         // Volume in litres (amountPaid / pricePerLitre)
+  
+  // Instrument Cluster Telemetry
+  currentOdometer      Float         // Car's remaining-range (DTE) gauge BEFORE fueling (e.g. 95 km)
+  afterFuelingOdometer Float?        // Car's remaining-range (DTE) gauge AFTER fueling (e.g. 670 km). Null = Pending
+  
+  gasStation           String?       // Gas vendor/station (e.g. "Ceypetco", "LIOC", "Sinopec", "Shell")
+  notes                String?       // Trip or driving conditions notes (e.g. "Highway drive with AC")
+  
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleConfig        VehicleConfig @relation(fields: [vehicleConfigId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date(sort: Desc)])
+  @@index([vehicleConfigId])
+  @@map("fuel_entries")
+}
+
+/// Cumulative Vehicle Odometer Reading for daily trip tracking
+model DailyTrip {
+  id              String        @id @default(cuid())
+  userId          String
+  vehicleConfigId String
+  
+  date            DateTime      @db.Date // Specific calendar date (YYYY-MM-DD)
+  totalOdometer   Float         // Cumulative vehicle odometer value on the cluster (e.g. 14,280 km)
+  notes           String?       // Notes on daily commute, route, or terrain
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleConfig   VehicleConfig @relation(fields: [vehicleConfigId], references: [id], onDelete: Cascade)
+
+  @@unique([vehicleConfigId, date])
+  @@index([userId, date(sort: Desc)])
+  @@map("daily_trips")
+}
+
+/// Quick Pre-Drive Health & Fuel Check
+model PreTripLog {
+  id              String        @id @default(cuid())
+  userId          String
+  vehicleConfigId String
+  
+  date            DateTime      @default(now())
+  currentOdometer Float         // Instrument cluster remaining range (DTE) in km before starting trip
+  notes           String?
+  
+  createdAt       DateTime      @default(now())
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleConfig   VehicleConfig @relation(fields: [vehicleConfigId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date(sort: Desc)])
+  @@index([vehicleConfigId])
+  @@map("pre_trip_logs")
+}
+
+/// AI Diagnosis & Telemetry Audit Log
+model AiAuditReport {
+  id               String   @id @default(cuid())
+  userId           String
+  analyzedEntries  Int      // Number of fuel records audited
+  economyRating    String   // e.g. "OPTIMAL", "AVERAGE", "HIGH_CONSUMPTION"
+  avgEconomyKmPerL Float
+  recommendations  String[] // Array of actionable hybrid driving recommendations
+  rawResponse      String?  // Complete generated summary
+  createdAt        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("ai_audit_reports")
+}

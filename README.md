@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # BAIC BJ30e Fuel & Drive Telemetry Suite
 
 A native-caliber, hybrid-aware fuel economy tracker, instrument cluster distance-to-empty (DTE) range gauge analyzer, daily trip logger, and predictive cost estimator specifically tailored for the **BAIC BJ30e Dual-Motor Hybrid SUV**.
@@ -326,3 +327,7 @@ npm run build
 ---
 
 *Built with React 19, TypeScript, Tailwind CSS, Lucide Icons, Recharts, Canvas Confetti, and Zod.*
+=======
+# fuel_tracker
+Tracking Fuel Consumption and Monthly fuelling.
+>>>>>>> 6b5e89cc337483ca96d48c167cccd1cbcb8133c0

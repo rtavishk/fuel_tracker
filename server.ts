@@ -18,6 +18,15 @@ async function startServer() {
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
 
+  // Error handling middleware for JSON parsing errors
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err instanceof SyntaxError && 'body' in err) {
+      console.error('[Server] JSON Parse Error:', err);
+      return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+    next();
+  });
+
   // Logging middleware
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
@@ -51,7 +60,13 @@ async function startServer() {
 
   // Global Error Handling Middleware
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('[Server Error Handler]:', err);
+    console.error('[Server Error Handler]:', {
+      message: err.message,
+      stack: err.stack,
+      path: req.path,
+      method: req.method,
+      body: req.body,
+    });
     res.status(err.status || 500).json({
       error: err.message || 'Internal Server Error',
     });

@@ -19,7 +19,18 @@ authRouter.post('/register', async (req: Request, res: Response) => {
   try {
     const { email, password, name, vehicleName, tankCapacity, model } = req.body;
 
+    console.log('[Auth] Registration attempt:', {
+      email: email ? email.substring(0, 3) + '***@***' : 'missing',
+      name,
+      vehicleName,
+      model,
+      tankCapacity,
+      hasPassword: !!password,
+      passwordLength: password?.length || 0
+    });
+
     if (!email || !email.includes('@')) {
+      console.log('[Auth] Registration failed: Invalid email');
       return res.status(400).json({ error: 'A valid email address is required.' });
     }
 
@@ -27,11 +38,14 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     const cleanName = (name || cleanEmail.split('@')[0]).trim();
 
     if (!password || password.length < 6) {
+      console.log('[Auth] Registration failed: Invalid password length');
       return res.status(400).json({ error: 'Password is required and must be at least 6 characters.' });
     }
 
     // Always encrypt password using bcrypt (10 rounds)
+    console.log('[Auth] Hashing password...');
     const passwordHash = await bcrypt.hash(password, 10);
+    console.log('[Auth] Password hashed successfully');
 
     const prisma = getPrismaClient();
     const token = generateSessionToken();
@@ -40,12 +54,15 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     if (prisma) {
       try {
         // Check if user already exists
+        console.log('[Auth] Checking if user exists:', cleanEmail);
         const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
         if (existing) {
+          console.log('[Auth] Registration failed: User already exists');
           return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
         }
 
         // Create User + VehicleConfig + Session in transaction
+        console.log('[Auth] Creating user with vehicle config...');
         const newUser = await prisma.user.create({
           data: {
             email: cleanEmail,
@@ -73,6 +90,14 @@ authRouter.post('/register', async (req: Request, res: Response) => {
           include: {
             vehicleConfigs: true,
           },
+        });
+
+        console.log('[Auth] User created successfully:', {
+          userId: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
+          vehicleConfigId: newUser.vehicleConfigs[0]?.id,
+          vehicleName: newUser.vehicleConfigs[0]?.name
         });
 
         // Set session cookie
@@ -168,7 +193,14 @@ authRouter.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
+    console.log('[Auth] Login attempt:', {
+      email: email ? email.substring(0, 3) + '***@***' : 'missing',
+      hasPassword: !!password,
+      passwordLength: password?.length || 0
+    });
+
     if (!email) {
+      console.log('[Auth] Login failed: Email is required');
       return res.status(400).json({ error: 'Email is required.' });
     }
 
@@ -179,28 +211,43 @@ authRouter.post('/login', async (req: Request, res: Response) => {
 
     if (prisma) {
       try {
+        console.log('[Auth] Looking up user:', cleanEmail);
         const user = await prisma.user.findUnique({
           where: { email: cleanEmail },
           include: { vehicleConfigs: true },
         });
 
         if (!user) {
+          console.log('[Auth] Login failed: User not found');
           return res.status(401).json({
             error: 'No account found with this email address. Please register first.',
           });
         }
 
+        console.log('[Auth] User found:', {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          hasPasswordHash: !!user.passwordHash,
+          vehicleConfigsCount: user.vehicleConfigs.length
+        });
+
         if (user.passwordHash) {
           if (!password) {
+            console.log('[Auth] Login failed: Password required');
             return res.status(400).json({ error: 'Password is required to sign in.' });
           }
+          console.log('[Auth] Comparing password...');
           const isMatch = await bcrypt.compare(password, user.passwordHash);
           if (!isMatch) {
+            console.log('[Auth] Login failed: Password mismatch');
             return res.status(401).json({ error: 'Incorrect email or password.' });
           }
+          console.log('[Auth] Password match successful');
         }
 
         // Create Session in Database
+        console.log('[Auth] Creating session...');
         await prisma.session.create({
           data: {
             userId: user.id,
@@ -208,6 +255,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
             expiresAt,
           },
         });
+        console.log('[Auth] Session created successfully');
 
         res.cookie('session_token', token, {
           httpOnly: true,
@@ -233,20 +281,27 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     }
 
     // Local fallback store (used only if database is completely disabled/not configured)
+    console.log('[Auth] Using local fallback store');
     const localStore = getLocalStore();
     const localUser = localStore.users.get(cleanEmail);
 
     if (!localUser) {
+      console.log('[Auth] Login failed: User not found in local store');
       return res.status(401).json({
         error: 'No account found with this email address. Please register first.',
       });
     }
 
+    console.log('[Auth] User found in local store:', { userId: localUser.id, email: localUser.email });
+
     if (localUser.passwordHash && password) {
+      console.log('[Auth] Comparing password in local store...');
       const isMatch = await bcrypt.compare(password, localUser.passwordHash);
       if (!isMatch) {
+        console.log('[Auth] Login failed: Password mismatch in local store');
         return res.status(401).json({ error: 'Incorrect email or password.' });
       }
+      console.log('[Auth] Password match successful in local store');
     }
 
     localStore.sessions.set(token, {
@@ -265,6 +320,8 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000,
       sameSite: 'lax',
     });
+
+    console.log('[Auth] Login successful (local store):', { userId: localUser.id, email: localUser.email });
 
     return res.json({
       success: true,

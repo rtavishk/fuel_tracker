@@ -2,31 +2,31 @@
 
 @layer base {
   :root {
-    --liquid-bg: #f3f4f6;
-    --liquid-surface: rgba(255, 255, 255, 0.72);
-    --liquid-surface-elevated: rgba(255, 255, 255, 0.88);
-    --liquid-border: rgba(0, 0, 0, 0.08);
-    --liquid-border-highlight: rgba(255, 255, 255, 0.8);
-    --liquid-text-primary: #09090b;
-    --liquid-text-secondary: #71717a;
-    --liquid-text-tertiary: #a1a1aa;
-    --liquid-accent: #09090b;
-    --liquid-bar-bg: rgba(245, 245, 247, 0.75);
-    --liquid-bar-border: rgba(0, 0, 0, 0.06);
+    --liquid-bg: #f5f5f7;
+    --liquid-surface: rgba(255, 255, 255, 0.85);
+    --liquid-surface-elevated: rgba(255, 255, 255, 0.95);
+    --liquid-border: rgba(0, 0, 0, 0.06);
+    --liquid-border-highlight: rgba(255, 255, 255, 0.9);
+    --liquid-text-primary: #1d1d1f;
+    --liquid-text-secondary: #86868b;
+    --liquid-text-tertiary: #d1d1d6;
+    --liquid-accent: #007aff;
+    --liquid-bar-bg: rgba(255, 255, 255, 0.8);
+    --liquid-bar-border: rgba(0, 0, 0, 0.05);
   }
 
   .dark {
-    --liquid-bg: #09090b;
-    --liquid-surface: rgba(24, 24, 27, 0.6);
-    --liquid-surface-elevated: rgba(39, 39, 42, 0.65);
-    --liquid-border: rgba(255, 255, 255, 0.08);
-    --liquid-border-highlight: rgba(255, 255, 255, 0.15);
-    --liquid-text-primary: #fafafa;
-    --liquid-text-secondary: #a1a1aa;
-    --liquid-text-tertiary: #52525b;
-    --liquid-accent: #ffffff;
-    --liquid-bar-bg: rgba(18, 18, 20, 0.72);
-    --liquid-bar-border: rgba(255, 255, 255, 0.09);
+    --liquid-bg: #1c1c1e;
+    --liquid-surface: rgba(44, 44, 46, 0.75);
+    --liquid-surface-elevated: rgba(58, 58, 60, 0.8);
+    --liquid-border: rgba(255, 255, 255, 0.1);
+    --liquid-border-highlight: rgba(255, 255, 255, 0.2);
+    --liquid-text-primary: #f5f5f7;
+    --liquid-text-secondary: #98989d;
+    --liquid-text-tertiary: #636366;
+    --liquid-accent: #0a84ff;
+    --liquid-bar-bg: rgba(28, 28, 30, 0.8);
+    --liquid-bar-border: rgba(255, 255, 255, 0.08);
   }
 
   body {
@@ -37,7 +37,6 @@
     -moz-osx-font-smoothing: grayscale;
     letter-spacing: -0.015em;
     touch-action: manipulation;
-    user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
 }

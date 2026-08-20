@@ -23,27 +23,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   return (
     <div className="w-full space-y-5" id="auth-modal-content">
       {/* Brand Identity Header Banner */}
-      <div className="relative overflow-hidden p-5 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-900 text-white border border-white/15 shadow-xl">
+      <div className="relative overflow-hidden p-5 rounded-3xl liquid-glass bg-gradient-to-br from-blue-500 to-blue-600 text-white border border-blue-400/30 shadow-2xl backdrop-blur-xl">
         {/* Specular Ambient Sheen */}
-        <div className="absolute top-0 right-0 w-44 h-44 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-44 h-44 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-36 h-36 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-white text-slate-900 flex items-center justify-center shadow-md border border-white/20 shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center shadow-lg border border-white/30 shrink-0">
               <Car className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-base font-black tracking-tight text-white">
-                  BAIC Telemetry Cloud
+                  Fuel Tracker
                 </span>
-                <span className="px-2 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-extrabold border border-white/20 uppercase tracking-wide">
-                  Hybrid HEV
+                <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-extrabold border border-white/30 uppercase tracking-wide">
+                  Pro
                 </span>
               </div>
-              <p className="text-xs text-slate-300/80 mt-0.5">
-                Real-time fuel efficiency, DTE range cluster & trip logs
+              <p className="text-xs text-white/80 mt-0.5">
+                Track fuel efficiency, range & trips
               </p>
             </div>
           </div>
@@ -57,16 +57,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             type="button"
             id="auth-tab-login"
             onClick={() => setMode('login')}
-            className={`relative flex-1 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+            className={`relative flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
               mode === 'login'
-                ? 'text-white dark:text-slate-900'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-white dark:text-gray-900'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             {mode === 'login' && (
               <motion.div
                 layoutId="auth-mode-pill"
-                className="absolute inset-0 bg-slate-900 dark:bg-white rounded-xl shadow-xs"
+                className="absolute inset-0 bg-blue-500 dark:bg-blue-400 rounded-xl shadow-md"
                 transition={{ type: 'spring', stiffness: 500, damping: 35 }}
               />
             )}
@@ -77,16 +77,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             type="button"
             id="auth-tab-signup"
             onClick={() => setMode('signup')}
-            className={`relative flex-1 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+            className={`relative flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
               mode === 'signup'
-                ? 'text-white dark:text-slate-900'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                ? 'text-white dark:text-gray-900'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             {mode === 'signup' && (
               <motion.div
                 layoutId="auth-mode-pill"
-                className="absolute inset-0 bg-slate-900 dark:bg-white rounded-xl shadow-xs"
+                className="absolute inset-0 bg-blue-500 dark:bg-blue-400 rounded-xl shadow-md"
                 transition={{ type: 'spring', stiffness: 500, damping: 35 }}
               />
             )}

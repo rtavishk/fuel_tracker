@@ -14,7 +14,7 @@ import { AnimatedCard } from '../animated/AnimatedCard';
 export const CalculatorView: React.FC = () => {
   const { config, kpis, preTripLogs, deletePreTripLog, setActiveModal } = useApp();
 
-  const [activeTool, setActiveTool] = useState<'budget' | 'fulltank' | 'pretrip'>('budget');
+  const [activeTool, setActiveTool] = useState<'budget' | 'fulltank' | 'pretrip' | 'economy'>('budget');
 
   // Tool 1: Budget -> Range
   const [budgetAmount, setBudgetAmount] = useState<string>('5000');
@@ -52,6 +52,14 @@ export const CalculatorView: React.FC = () => {
   const estCostToFull = estLitresToFull * parsedFullTankPrice;
   const kmToAdd = Math.max(0, safeBenchmark - parsedCurrentGauge);
 
+  // Tool 4: Distance & Litres -> Economy Calculator
+  const [distanceKm, setDistanceKm] = useState<string>('');
+  const [litresUsed, setLitresUsed] = useState<string>('');
+  
+  const parsedDistance = parseFloat(distanceKm) || 0;
+  const parsedLitres = parseFloat(litresUsed) || 0;
+  const calculatedEconomy = parsedLitres > 0 ? parsedDistance / parsedLitres : 0;
+
   return (
     <div className="w-full pb-24 sm:pb-12 safe-pb">
       <Header
@@ -68,10 +76,11 @@ export const CalculatorView: React.FC = () => {
           tabs={[
             { id: 'budget', label: 'Money to Range' },
             { id: 'fulltank', label: 'Cost to Full Tank' },
+            { id: 'economy', label: 'Economy Calc' },
             { id: 'pretrip', label: 'Pre-Trip Logs' },
           ]}
           activeTab={activeTool}
-          onChange={(tab) => setActiveTool(tab as 'budget' | 'fulltank' | 'pretrip')}
+          onChange={(tab) => setActiveTool(tab as 'budget' | 'fulltank' | 'economy' | 'pretrip')}
           layoutId="calc-tool-tabs"
           size="md"
         />
@@ -320,7 +329,99 @@ export const CalculatorView: React.FC = () => {
             </motion.div>
           )}
 
-          {/* TOOL 3: PRE-TRIP LOGS & HISTORY */}
+          {/* TOOL 3: ECONOMY CALCULATOR */}
+          {activeTool === 'economy' && (
+            <motion.div
+              key="economy"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-4"
+            >
+              <AnimatedCard className="p-5 sm:p-6 rounded-3xl liquid-card space-y-4">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Calculate Fuel Economy from Distance & Litres
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Enter your trip distance and fuel used to calculate km/L economy (e.g., 577km ÷ 38.14L = 15.13 km/L)
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      Distance Driven ({config.distanceUnit})
+                    </label>
+                    <input
+                      type="number"
+                      id="calc-economy-distance"
+                      value={distanceKm}
+                      onChange={(e) => setDistanceKm(e.target.value)}
+                      placeholder="e.g. 577"
+                      className="w-full px-3.5 py-2.5 rounded-2xl liquid-glass text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+                      Fuel Used ({config.volumeUnit})
+                    </label>
+                    <input
+                      type="number"
+                      id="calc-economy-litres"
+                      value={litresUsed}
+                      onChange={(e) => setLitresUsed(e.target.value)}
+                      placeholder="e.g. 38.14"
+                      className="w-full px-3.5 py-2.5 rounded-2xl liquid-glass text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Output Result Card */}
+                <div className="p-5 rounded-3xl bg-gradient-to-br from-amber-600 via-orange-600 to-red-700 text-white shadow-xl shadow-amber-500/20 space-y-4 border border-white/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-200">
+                      Calculated Fuel Economy
+                    </span>
+                    <span className="text-xs text-white/80">
+                      {calculatedEconomy > 0 
+                        ? `${parsedDistance} km ÷ ${parsedLitres} L`
+                        : 'Enter distance and fuel used'
+                      }
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl sm:text-5xl font-black tracking-tight">
+                      {calculatedEconomy > 0 ? (
+                        <AnimatedNumber value={calculatedEconomy} decimals={2} />
+                      ) : (
+                        '--'
+                      )}
+                    </span>
+                    <span className="text-xl font-medium text-white/70">
+                      km/L
+                    </span>
+                  </div>
+
+                  {calculatedEconomy > 0 && (
+                    <div className="pt-3 border-t border-white/20 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/70">Formula:</span>
+                        <span className="text-white font-mono">
+                          {parsedDistance} ÷ {parsedLitres} = {calculatedEconomy.toFixed(2)} km/L
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AnimatedCard>
+            </motion.div>
+          )}
+
+          {/* TOOL 4: PRE-TRIP LOGS & HISTORY */}
           {activeTool === 'pretrip' && (
             <motion.div
               key="pretrip"

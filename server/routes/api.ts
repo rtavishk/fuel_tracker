@@ -1,8 +1,14 @@
-import { Router, Request, Response } from 'express';
+import express, { Router, Request, Response, NextFunction } from 'express';
 import { getPrismaClient, testDatabaseConnection } from '../db.js';
 import { GoogleGenAI } from '@google/genai';
 
 export const apiRouter = Router();
+
+// Ensure all API responses are JSON
+apiRouter.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
 
 // 1. Database Connection Status
 apiRouter.get('/db/status', async (req: Request, res: Response) => {

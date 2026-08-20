@@ -1,10 +1,16 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { getPrismaClient, getLocalStore } from '../db.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 
 export const authRouter = Router();
+
+// Ensure all auth responses are JSON
+authRouter.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
 
 const SESSION_DURATION_DAYS = 30;
 
@@ -119,67 +125,15 @@ authRouter.post('/register', async (req: Request, res: Response) => {
           config: newUser.vehicleConfigs[0] || null,
         });
       } catch (prismaErr: any) {
-        console.warn('[Prisma Register] Fallback to local store:', prismaErr?.message);
+        console.warn('[Prisma Register] Error creating user:', prismaErr?.message);
+        console.error('[Prisma Register] Full error:', prismaErr);
+        return res.status(500).json({ error: 'Database registration error. Please try again.' });
       }
+    } else {
+      // No database available
+      console.error('[Auth] Registration failed: Database not configured');
+      return res.status(500).json({ error: 'Database not configured. Please contact support.' });
     }
-
-    // Fallback store
-    const localStore = getLocalStore();
-    if (localStore.users.has(cleanEmail)) {
-      return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
-    }
-
-    const userId = 'usr_' + Date.now();
-    const localUser = {
-      id: userId,
-      email: cleanEmail,
-      name: cleanName,
-      passwordHash: passwordHash || undefined,
-      createdAt: new Date().toISOString(),
-    };
-    localStore.users.set(cleanEmail, localUser);
-    localStore.users.set(userId, localUser);
-
-    const configId = 'cfg_' + Date.now();
-    const localConfig = {
-      id: configId,
-      userId,
-      name: vehicleName || 'BAIC BJ30e',
-      model: model || 'BJ30e Hybrid Dual-Motor',
-      tankCapacityLitres: tankCapacity ? Number(tankCapacity) : 52,
-      fullRangeBenchmarkKm: null,
-      currency: 'Rs',
-      distanceUnit: 'km',
-      volumeUnit: 'L',
-      theme: 'system',
-      authEnabled: true,
-    };
-    localStore.configs.set(userId, localConfig);
-    localStore.fuelEntries.set(userId, []);
-    localStore.dailyTrips.set(userId, []);
-    localStore.preTripLogs.set(userId, []);
-
-    localStore.sessions.set(token, {
-      id: 'sess_' + Date.now(),
-      userId,
-      token,
-      expiresAt: expiresAt.getTime(),
-      createdAt: new Date().toISOString(),
-    });
-
-    res.cookie('session_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000,
-      sameSite: 'lax',
-    });
-
-    return res.status(201).json({
-      success: true,
-      token,
-      user: { id: localUser.id, email: localUser.email, name: localUser.name },
-      config: localConfig,
-    });
   } catch (err: any) {
     console.error('[Auth Register Error]:', err);
     res.status(500).json({ error: err?.message || 'Failed to register account' });
@@ -276,59 +230,14 @@ authRouter.post('/login', async (req: Request, res: Response) => {
         });
       } catch (prismaErr: any) {
         console.warn('[Prisma Login] Error querying user:', prismaErr?.message);
+        console.error('[Prisma Login] Full error:', prismaErr);
         return res.status(500).json({ error: 'Database authentication error. Please try again.' });
       }
+    } else {
+      // No database available
+      console.error('[Auth] Login failed: Database not configured');
+      return res.status(500).json({ error: 'Database not configured. Please contact support.' });
     }
-
-    // Local fallback store (used only if database is completely disabled/not configured)
-    console.log('[Auth] Using local fallback store');
-    const localStore = getLocalStore();
-    const localUser = localStore.users.get(cleanEmail);
-
-    if (!localUser) {
-      console.log('[Auth] Login failed: User not found in local store');
-      return res.status(401).json({
-        error: 'No account found with this email address. Please register first.',
-      });
-    }
-
-    console.log('[Auth] User found in local store:', { userId: localUser.id, email: localUser.email });
-
-    if (localUser.passwordHash && password) {
-      console.log('[Auth] Comparing password in local store...');
-      const isMatch = await bcrypt.compare(password, localUser.passwordHash);
-      if (!isMatch) {
-        console.log('[Auth] Login failed: Password mismatch in local store');
-        return res.status(401).json({ error: 'Incorrect email or password.' });
-      }
-      console.log('[Auth] Password match successful in local store');
-    }
-
-    localStore.sessions.set(token, {
-      id: 'sess_' + Date.now(),
-      userId: localUser.id,
-      token,
-      expiresAt: expiresAt.getTime(),
-      createdAt: new Date().toISOString(),
-    });
-
-    const userConfig = localStore.configs.get(localUser.id);
-
-    res.cookie('session_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000,
-      sameSite: 'lax',
-    });
-
-    console.log('[Auth] Login successful (local store):', { userId: localUser.id, email: localUser.email });
-
-    return res.json({
-      success: true,
-      token,
-      user: { id: localUser.id, email: localUser.email, name: localUser.name },
-      config: userConfig || null,
-    });
   } catch (err: any) {
     console.error('[Auth Login Error]:', err);
     res.status(500).json({ error: err?.message || 'Login failed' });

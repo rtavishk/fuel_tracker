@@ -27,6 +27,18 @@ async function startServer() {
     next();
   });
 
+  // Ensure all API responses are JSON (catch HTML responses)
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const originalJson = res.json.bind(res);
+    res.json = function (data: any) {
+      // Ensure we never send HTML by clearing any existing content
+      res.removeHeader('Content-Type');
+      res.setHeader('Content-Type', 'application/json');
+      return originalJson(data);
+    };
+    next();
+  });
+
   // Logging middleware
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
@@ -66,9 +78,21 @@ async function startServer() {
       path: req.path,
       method: req.method,
       body: req.body,
+      env: process.env.NODE_ENV,
     });
-    res.status(err.status || 500).json({
-      error: err.message || 'Internal Server Error',
+
+    // Always return JSON, never HTML
+    res.removeHeader('Content-Type');
+    res.setHeader('Content-Type', 'application/json');
+
+    const statusCode = err.status || 500;
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'An error occurred. Please try again.'
+      : (err.message || 'Internal Server Error');
+
+    res.status(statusCode).json({
+      error: errorMessage,
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
     });
   });
 

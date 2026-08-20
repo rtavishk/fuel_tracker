@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { getPrismaClient, getLocalStore } from '../db.js';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
 
@@ -6,6 +6,12 @@ export const telemetryRouter = Router();
 
 // Apply authMiddleware to all telemetry routes
 telemetryRouter.use(authMiddleware);
+
+// Ensure all telemetry responses are JSON (after auth)
+telemetryRouter.use((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
 
 /**
  * 1. Fetch Complete Live Telemetry Data from DB for Authenticated User

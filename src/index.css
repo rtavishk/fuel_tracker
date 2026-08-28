@@ -1,173 +1,38 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
-    --liquid-bg: #f5f5f7;
-    --liquid-surface: rgba(255, 255, 255, 0.85);
-    --liquid-surface-elevated: rgba(255, 255, 255, 0.95);
-    --liquid-border: rgba(0, 0, 0, 0.06);
-    --liquid-border-highlight: rgba(255, 255, 255, 0.9);
-    --liquid-text-primary: #1d1d1f;
-    --liquid-text-secondary: #86868b;
-    --liquid-text-tertiary: #d1d1d6;
-    --liquid-accent: #007aff;
-    --liquid-bar-bg: rgba(255, 255, 255, 0.8);
-    --liquid-bar-border: rgba(0, 0, 0, 0.05);
-  }
-
-  .dark {
-    --liquid-bg: #1c1c1e;
-    --liquid-surface: rgba(44, 44, 46, 0.75);
-    --liquid-surface-elevated: rgba(58, 58, 60, 0.8);
-    --liquid-border: rgba(255, 255, 255, 0.1);
-    --liquid-border-highlight: rgba(255, 255, 255, 0.2);
-    --liquid-text-primary: #f5f5f7;
-    --liquid-text-secondary: #98989d;
-    --liquid-text-tertiary: #636366;
-    --liquid-accent: #0a84ff;
-    --liquid-bar-bg: rgba(28, 28, 30, 0.8);
-    --liquid-bar-border: rgba(255, 255, 255, 0.08);
-  }
-
-  body {
-    background-color: var(--liquid-bg);
-    color: var(--liquid-text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.015em;
-    touch-action: manipulation;
+  html, body {
+    background-color: #09090b;
+    color: #f4f4f5;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    max-width: 100vw;
     -webkit-tap-highlight-color: transparent;
   }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
+  }
 }
 
-/* iOS 26 Liquid Glass Surface Components */
-.liquid-glass,
-.ios-card,
-.liquid-card {
-  background: var(--liquid-surface);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 0.5px solid var(--liquid-border);
-  box-shadow: 
-    inset 0 1px 1px 0 var(--liquid-border-highlight),
-    0 10px 30px -10px rgba(0, 0, 0, 0.06),
-    0 2px 6px -1px rgba(0, 0, 0, 0.02);
-  border-radius: 22px;
+/* Strict Mobile & Tablet Viewport Safety - No accidental horizontal scroll */
+* {
+  box-sizing: border-box;
 }
 
-.dark .liquid-glass,
-.dark .ios-card,
-.dark .liquid-card {
-  box-shadow: 
-    inset 0 1px 1px 0 var(--liquid-border-highlight),
-    0 16px 40px -12px rgba(0, 0, 0, 0.6);
-}
-
-/* Liquid Glass Elevated Floating Bar */
-.ios-glass-bar,
-.liquid-bar {
-  background: var(--liquid-bar-bg);
-  backdrop-filter: blur(32px) saturate(200%);
-  -webkit-backdrop-filter: blur(32px) saturate(200%);
-  border-top: 0.5px solid var(--liquid-bar-border);
-  box-shadow: inset 0 1px 1px 0 var(--liquid-border-highlight);
-}
-
-.ios-glass-header {
-  background: var(--liquid-bar-bg);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border-bottom: 0.5px solid var(--liquid-bar-border);
-}
-
-/* Liquid Glass Island / Mini-Player */
-.apple-mini-player {
-  background: var(--liquid-surface-elevated);
-  backdrop-filter: blur(30px) saturate(190%);
-  -webkit-backdrop-filter: blur(30px) saturate(190%);
-  border: 0.5px solid var(--liquid-border);
-  box-shadow: 
-    inset 0 1px 1px 0 var(--liquid-border-highlight),
-    0 14px 36px -6px rgba(0, 0, 0, 0.12),
-    0 4px 12px -2px rgba(0, 0, 0, 0.04);
-}
-
-.dark .apple-mini-player {
-  box-shadow: 
-    inset 0 1px 1px 0 var(--liquid-border-highlight),
-    0 20px 48px -8px rgba(0, 0, 0, 0.7);
-}
-
-/* Liquid Segmented Capsule */
-.ios-segmented {
-  background-color: rgba(120, 120, 128, 0.12);
-  border-radius: 14px;
-  padding: 3px;
-  backdrop-filter: blur(12px);
-}
-
-.dark .ios-segmented {
-  background-color: rgba(120, 120, 128, 0.2);
-}
-
-/* Legacy Liquid classes mapped to iOS styling */
-.liquid-glass {
-  background: var(--ios-card);
-  border: 0.5px solid var(--ios-card-border);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-}
-
-.liquid-card {
-  background-color: var(--ios-card);
-  border: 0.5px solid var(--ios-card-border);
-  border-radius: 20px;
-}
-
-/* Safe area padding utilities */
-.safe-pb {
-  padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
-}
-
-.safe-pt {
-  padding-top: max(0.75rem, env(safe-area-inset-top));
-}
-
-/* iOS Touch feedback */
-.ios-pressable {
-  transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease;
-}
-.ios-pressable:active {
-  transform: scale(0.96);
-  opacity: 0.85;
-}
-
-/* Custom subtle scrollbar */
+/* Custom scrollbar in Agndex Zinc & Emerald */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
-
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #09090b;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: #27272a;
   border-radius: 9999px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.45);
+  background: #10b981;
 }
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
 

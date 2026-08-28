@@ -1,121 +1,106 @@
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { createServer as createViteServer } from 'vite';
-import { apiRouter } from './server/routes/api.js';
-import { authRouter } from './server/routes/auth.js';
-import { telemetryRouter } from './server/routes/telemetry.js';
+import dotenv from 'dotenv';
+// Load environment variables from .env.local first, then fall back to .env
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import express from 'express';
+import path from 'path';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import next from 'next';
+import {
+  configureSecurityHeaders,
+  customSecurityHeaders,
+  sqlInjectionSanitizer,
+} from './server/middleware/security';
+import { apiRateLimiter } from './server/middleware/rateLimit';
+import { requestLogger } from './server/middleware/logger';
+import { logger } from './server/utils/logger';
+import authRoutes from './server/routes/auth';
+import vehicleRoutes from './server/routes/vehicles';
+import fuelRoutes from './server/routes/fuel';
+import tripRoutes from './server/routes/trips';
+import maintenanceRoutes from './server/routes/maintenance';
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Middleware
-  app.use(express.json({ limit: '10mb' }));
+  // 1. Next.js / Vercel style Request Logger
+  app.use(requestLogger);
+
+  // 2. SSL & Security Headers (Helmet, CSP, HSTS, X-Content-Type)
+  app.use(configureSecurityHeaders());
+  app.use(customSecurityHeaders);
+
+  // 2. CORS configuration
+  app.use(
+    cors({
+      origin: true,
+      credentials: true,
+    })
+  );
+
+  // 3. Request Body Parsers (with size restrictions to avoid payload attacks)
+  app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(cookieParser());
 
-  // Error handling middleware for JSON parsing errors
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (err instanceof SyntaxError && 'body' in err) {
-      console.error('[Server] JSON Parse Error:', err);
-      return res.status(400).json({ error: 'Invalid JSON payload' });
-    }
-    next();
-  });
+  // 4. SQL Injection Sanitizer Middleware
+  app.use(sqlInjectionSanitizer);
 
-  // Ensure all API responses are JSON (catch HTML responses)
-  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const originalJson = res.json.bind(res);
-    res.json = function (data: any) {
-      // Ensure we never send HTML by clearing any existing content
-      res.removeHeader('Content-Type');
-      res.setHeader('Content-Type', 'application/json');
-      return originalJson(data);
-    };
-    next();
-  });
+  // 5. Global API Rate Limiter
+  app.use('/api', apiRateLimiter);
 
-  // Logging middleware
-  app.use((req, res, next) => {
-    if (req.path.startsWith('/api')) {
-      const start = Date.now();
-      res.on('finish', () => {
-        const duration = Date.now() - start;
-        console.log(`[API] ${req.method} ${req.path} -> ${res.statusCode} (${duration}ms)`);
-      });
-    }
-    next();
-  });
-
-  // Auth & Session Routes
-  app.use('/api/auth', authRouter);
-
-  // Telemetry Routes (Protected via Auth & Session Middleware)
-  app.use('/api/telemetry', telemetryRouter);
-
-  // General & DB Sync Routes
-  app.use('/api', apiRouter);
-
-  // Health endpoint
-  app.get('/api/health', (req, res) => {
+  // 6. System Health & Security Status Check
+  app.get('/api/health', (_req, res) => {
     res.json({
       status: 'ok',
-      service: 'BAIC BJ30e Fuel Telemetry Server',
       timestamp: new Date().toISOString(),
-      nodeEnv: process.env.NODE_ENV || 'development',
+      security: {
+        ssl_protection: 'Strict-Transport-Security (HSTS) Active',
+        sql_injection_defense: 'Prisma Parameterized Queries & Sanitizer Active',
+        rate_limiting: 'Active',
+        csp: 'Content-Security-Policy Active',
+      },
+      environment: process.env.NODE_ENV || 'development',
     });
   });
 
-  // Global Error Handling Middleware
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('[Server Error Handler]:', {
-      message: err.message,
-      stack: err.stack,
-      path: req.path,
-      method: req.method,
-      body: req.body,
-      env: process.env.NODE_ENV,
-    });
+  // 7. Mount Core API Route Controllers
+  app.use('/api/auth', authRoutes);
+  app.use('/api/vehicles', vehicleRoutes);
+  app.use('/api/fuel-entries', fuelRoutes);
+  app.use('/api/trip-entries', tripRoutes);
+  app.use('/api/maintenance', maintenanceRoutes);
 
-    // Always return JSON, never HTML
-    res.removeHeader('Content-Type');
-    res.setHeader('Content-Type', 'application/json');
-
-    const statusCode = err.status || 500;
-    const errorMessage = process.env.NODE_ENV === 'production'
-      ? 'An error occurred. Please try again.'
-      : (err.message || 'Internal Server Error');
-
-    res.status(statusCode).json({
-      error: errorMessage,
-      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+  // 8. Global Error Handler (Prevents stack trace leaks)
+  app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    logger.error(`API Error on ${req.method} ${req.originalUrl}: ${err.message}`, err);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message,
     });
   });
 
-  // Vite Middleware for Development / Static serving for Production
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
+  // 9. Next.js Frontend Integration
+  const dev = process.env.NODE_ENV !== 'production';
+  const nextApp = next({ dev });
+  const handle = nextApp.getRequestHandler();
 
+  await nextApp.prepare();
+
+  app.all('*', (req, res) => {
+    return handle(req, res);
+  });
+
+  // 10. Start Server
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] BAIC BJ30e Telemetry Server listening on port ${PORT}`);
+    logger.info(`▲ Next.js / Fullstack Server running on http://0.0.0.0:${PORT} (ready for Vercel/Node deployment)`);
   });
 }
 
 startServer().catch((err) => {
-  console.error('[Server] Failed to start:', err);
+  logger.error('Failed to start server:', err);
+  process.exit(1);
 });

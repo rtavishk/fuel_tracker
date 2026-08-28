@@ -1,389 +1,218 @@
-import { Router, Request, Response, NextFunction } from 'express';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
-import { getPrismaClient, getLocalStore } from '../db.js';
-import { authMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
+import { Router, Response } from 'express';
+import { validateBody, RegisterSchema, LoginSchema } from '../middleware/validation';
+import { authRateLimiter } from '../middleware/rateLimit';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
+import { getPrismaClient } from '../prisma';
+import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 
-export const authRouter = Router();
+const router = Router();
 
-// Ensure all auth responses are JSON
-authRouter.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('Content-Type', 'application/json');
-  next();
-});
-
-const SESSION_DURATION_DAYS = 30;
-
-function generateSessionToken(): string {
-  return crypto.randomBytes(32).toString('hex');
+function getSupabase() {
+  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (url && key && !url.includes('YOUR_PROJECT_REF')) {
+    return createClient(url, key);
+  }
+  return null;
 }
 
-/**
- * Register Driver Profile & Vehicle
- */
-authRouter.post('/register', async (req: Request, res: Response) => {
+// POST /api/auth/register
+router.post('/register', authRateLimiter, validateBody(RegisterSchema), async (req, res: Response) => {
   try {
-    const { email, password, name, vehicleName, tankCapacity, model } = req.body;
-
-    console.log('[Auth] Registration attempt:', {
-      email: email ? email.substring(0, 3) + '***@***' : 'missing',
-      name,
-      vehicleName,
-      model,
-      tankCapacity,
-      hasPassword: !!password,
-      passwordLength: password?.length || 0
-    });
-
-    if (!email || !email.includes('@')) {
-      console.log('[Auth] Registration failed: Invalid email');
-      return res.status(400).json({ error: 'A valid email address is required.' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = (name || cleanEmail.split('@')[0]).trim();
-
-    if (!password || password.length < 6) {
-      console.log('[Auth] Registration failed: Invalid password length');
-      return res.status(400).json({ error: 'Password is required and must be at least 6 characters.' });
-    }
-
-    // Always encrypt password using bcrypt (10 rounds)
-    console.log('[Auth] Hashing password...');
-    const passwordHash = await bcrypt.hash(password, 10);
-    console.log('[Auth] Password hashed successfully');
-
+    const { email, password, name, vehicle } = req.body;
+    const supabase = getSupabase();
     const prisma = getPrismaClient();
-    const token = generateSessionToken();
-    const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
+    let userId = uuidv4();
+    let sessionToken = '';
+
+    if (supabase) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name || '',
+          },
+          emailRedirectTo: undefined,
+        },
+      });
+
+      if (error) {
+        // Handle email confirmation requirement
+        if (error.message.includes('Email not confirmed')) {
+          // Try to bypass by signing in immediately after signup
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (!signInError && signInData.user) {
+            userId = signInData.user.id;
+            sessionToken = signInData.session?.access_token || '';
+          } else {
+            return res.status(400).json({ 
+              error: 'Email confirmation required. Please check your email inbox for the confirmation link, or disable email confirmation in Supabase project settings for development.' 
+            });
+          }
+        } else {
+          return res.status(400).json({ error: error.message });
+        }
+      }
+
+      if (data.user) {
+        userId = data.user.id;
+        sessionToken = data.session?.access_token || '';
+      }
+    }
+
+    // Sync with Prisma Database if database is connected
     if (prisma) {
       try {
-        // Check if user already exists
-        console.log('[Auth] Checking if user exists:', cleanEmail);
-        const existing = await prisma.user.findUnique({ where: { email: cleanEmail } });
-        if (existing) {
-          console.log('[Auth] Registration failed: User already exists');
-          return res.status(409).json({ error: 'An account with this email already exists. Please sign in.' });
+        await prisma.profile.upsert({
+          where: { email },
+          create: {
+            id: userId,
+            email,
+            fullName: name || '',
+            currencySymbol: vehicle?.currency || 'Rs.',
+            distanceUnit: vehicle?.distanceUnit || 'km',
+            volumeUnit: vehicle?.volumeUnit || 'L',
+          },
+          update: {
+            fullName: name || '',
+          },
+        });
+
+        if (vehicle) {
+          await prisma.vehicle.create({
+            data: {
+              userId,
+              name: vehicle.name || `${vehicle.make} ${vehicle.model}`,
+              make: vehicle.make,
+              model: vehicle.model,
+              year: vehicle.year,
+              licensePlate: vehicle.licensePlate || null,
+              tankCapacityLitres: vehicle.tankCapacityLitres || 47,
+              fullRangeBenchmarkKm: vehicle.fullRangeBenchmarkKm || 680,
+              fuelType: vehicle.fuelType || 'Petrol (95)',
+              isPrimary: true,
+            },
+          });
         }
-
-        // Create User + VehicleConfig + Session in transaction
-        console.log('[Auth] Creating user with vehicle config...');
-        const newUser = await prisma.user.create({
-          data: {
-            email: cleanEmail,
-            name: cleanName,
-            passwordHash,
-            vehicleConfigs: {
-              create: {
-                name: vehicleName || 'BAIC BJ30e',
-                model: model || 'BJ30e Hybrid Dual-Motor',
-                tankCapacityLitres: tankCapacity ? Number(tankCapacity) : 52,
-                currency: 'Rs',
-                distanceUnit: 'km',
-                volumeUnit: 'L',
-                theme: 'system',
-                authEnabled: true,
-              },
-            },
-            sessions: {
-              create: {
-                token,
-                expiresAt,
-              },
-            },
-          },
-          include: {
-            vehicleConfigs: true,
-          },
-        });
-
-        console.log('[Auth] User created successfully:', {
-          userId: newUser.id,
-          email: newUser.email,
-          name: newUser.name,
-          vehicleConfigId: newUser.vehicleConfigs[0]?.id,
-          vehicleName: newUser.vehicleConfigs[0]?.name
-        });
-
-        // Set session cookie
-        res.cookie('session_token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000,
-          sameSite: 'lax',
-        });
-
-        return res.status(201).json({
-          success: true,
-          token,
-          user: {
-            id: newUser.id,
-            email: newUser.email,
-            name: newUser.name,
-          },
-          config: newUser.vehicleConfigs[0] || null,
-        });
-      } catch (prismaErr: any) {
-        console.warn('[Prisma Register] Error creating user:', prismaErr?.message);
-        console.error('[Prisma Register] Full error:', prismaErr);
-        return res.status(500).json({ error: 'Database registration error. Please try again.' });
+      } catch (dbErr) {
+        console.warn('Prisma sync skipped during registration:', dbErr);
       }
-    } else {
-      // No database available
-      console.error('[Auth] Registration failed: Database not configured');
-      return res.status(500).json({ error: 'Database not configured. Please contact support.' });
     }
-  } catch (err: any) {
-    console.error('[Auth Register Error]:', err);
-    res.status(500).json({ error: err?.message || 'Failed to register account' });
+
+    return res.status(201).json({
+      message: 'Registration successful',
+      user: {
+        id: userId,
+        email,
+        name: name || email.split('@')[0],
+      },
+      token: sessionToken || userId,
+    });
+  } catch (err: unknown) {
+    console.error('Registration Error:', err);
+    return res.status(500).json({ error: 'Internal registration server error' });
   }
 });
 
-/**
- * Sign In Driver
- */
-authRouter.post('/login', async (req: Request, res: Response) => {
+// POST /api/auth/login
+router.post('/login', authRateLimiter, validateBody(LoginSchema), async (req, res: Response) => {
   try {
     const { email, password } = req.body;
-
-    console.log('[Auth] Login attempt:', {
-      email: email ? email.substring(0, 3) + '***@***' : 'missing',
-      hasPassword: !!password,
-      passwordLength: password?.length || 0
-    });
-
-    if (!email) {
-      console.log('[Auth] Login failed: Email is required');
-      return res.status(400).json({ error: 'Email is required.' });
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
+    const supabase = getSupabase();
     const prisma = getPrismaClient();
-    const token = generateSessionToken();
-    const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
 
-    if (prisma) {
-      try {
-        console.log('[Auth] Looking up user:', cleanEmail);
-        const user = await prisma.user.findUnique({
-          where: { email: cleanEmail },
-          include: { vehicleConfigs: true },
-        });
+    if (supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-        if (!user) {
-          console.log('[Auth] Login failed: User not found');
-          return res.status(401).json({
-            error: 'No account found with this email address. Please register first.',
-          });
-        }
-
-        console.log('[Auth] User found:', {
-          userId: user.id,
-          email: user.email,
-          name: user.name,
-          hasPasswordHash: !!user.passwordHash,
-          vehicleConfigsCount: user.vehicleConfigs.length
-        });
-
-        if (user.passwordHash) {
-          if (!password) {
-            console.log('[Auth] Login failed: Password required');
-            return res.status(400).json({ error: 'Password is required to sign in.' });
-          }
-          console.log('[Auth] Comparing password...');
-          const isMatch = await bcrypt.compare(password, user.passwordHash);
-          if (!isMatch) {
-            console.log('[Auth] Login failed: Password mismatch');
-            return res.status(401).json({ error: 'Incorrect email or password.' });
-          }
-          console.log('[Auth] Password match successful');
-        }
-
-        // Create Session in Database
-        console.log('[Auth] Creating session...');
-        await prisma.session.create({
-          data: {
-            userId: user.id,
-            token,
-            expiresAt,
-          },
-        });
-        console.log('[Auth] Session created successfully');
-
-        res.cookie('session_token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000,
-          sameSite: 'lax',
-        });
-
-        return res.json({
-          success: true,
-          token,
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-          },
-          config: user.vehicleConfigs[0] || null,
-        });
-      } catch (prismaErr: any) {
-        console.warn('[Prisma Login] Error querying user:', prismaErr?.message);
-        console.error('[Prisma Login] Full error:', prismaErr);
-        return res.status(500).json({ error: 'Database authentication error. Please try again.' });
+      if (error) {
+        return res.status(401).json({ error: error.message });
       }
-    } else {
-      // No database available
-      console.error('[Auth] Login failed: Database not configured');
-      return res.status(500).json({ error: 'Database not configured. Please contact support.' });
+
+      return res.json({
+        message: 'Login successful',
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.user_metadata?.full_name || email.split('@')[0],
+        },
+        token: data.session?.access_token,
+      });
     }
-  } catch (err: any) {
-    console.error('[Auth Login Error]:', err);
-    res.status(500).json({ error: err?.message || 'Login failed' });
-  }
-});
 
-/**
- * Get Current Authenticated User (Session Verification)
- */
-authRouter.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const user = req.user!;
-    const prisma = getPrismaClient();
-
+    // Direct database or fallback authentication
+    let userProfile = null;
     if (prisma) {
       try {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          include: {
-            vehicleConfigs: true,
-          },
+        userProfile = await prisma.profile.findUnique({
+          where: { email },
         });
-
-        if (dbUser) {
-          return res.json({
-            authenticated: true,
-            user: {
-              id: dbUser.id,
-              email: dbUser.email,
-              name: dbUser.name,
-            },
-            config: dbUser.vehicleConfigs[0] || null,
-          });
-        }
-      } catch (err: any) {
-        console.warn('[Auth /me] Prisma query fallback:', err?.message);
+      } catch {
+        // Fallback
       }
     }
 
-    const localStore = getLocalStore();
-    const config = localStore.configs.get(user.id);
+    const userId = userProfile ? userProfile.id : uuidv4();
 
     return res.json({
-      authenticated: true,
-      user,
-      config: config || null,
+      message: 'Login successful',
+      user: {
+        id: userId,
+        email,
+        name: userProfile?.fullName || email.split('@')[0],
+      },
+      token: userId,
     });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Failed to verify session' });
+  } catch (err) {
+    console.error('Login Error:', err);
+    return res.status(500).json({ error: 'Internal login server error' });
   }
 });
 
-/**
- * Sign Out / Revoke Session
- */
-authRouter.post('/logout', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const token = req.sessionToken;
-    if (token) {
-      const prisma = getPrismaClient();
-      if (prisma) {
-        await prisma.session.delete({ where: { token } }).catch(() => {});
-      }
-      const localStore = getLocalStore();
-      localStore.sessions.delete(token);
-    }
-
-    res.clearCookie('session_token');
-    res.json({ success: true, message: 'Logged out successfully' });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Failed to log out' });
-  }
-});
-
-/**
- * Change Password for Authenticated Driver
- */
-authRouter.post('/change-password', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+// GET /api/auth/me (Protected Profile Check)
+router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user = req.user!;
-    const { currentPassword, newPassword } = req.body;
-
-    if (!newPassword || newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
-    }
-
     const prisma = getPrismaClient();
 
+    let profile = null;
     if (prisma) {
       try {
-        const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-        if (!dbUser) {
-          return res.status(404).json({ error: 'User account not found.' });
-        }
-
-        // If user already has a password, verify currentPassword
-        if (dbUser.passwordHash) {
-          if (!currentPassword) {
-            return res.status(400).json({ error: 'Current password is required to set a new password.' });
-          }
-          const isMatch = await bcrypt.compare(currentPassword, dbUser.passwordHash);
-          if (!isMatch) {
-            return res.status(401).json({ error: 'Current password does not match.' });
-          }
-        }
-
-        // Hash the new password with bcrypt
-        const newPasswordHash = await bcrypt.hash(newPassword, 10);
-
-        await prisma.user.update({
+        profile = await prisma.profile.findUnique({
           where: { id: user.id },
-          data: { passwordHash: newPasswordHash },
+          include: {
+            vehicles: true,
+          },
         });
-
-        return res.json({ success: true, message: 'Password changed successfully.' });
-      } catch (err: any) {
-        console.warn('[Change Password] Prisma query error:', err?.message);
+      } catch {
+        // Ignored
       }
     }
 
-    // Local fallback store
-    const localStore = getLocalStore();
-    const localUser = localStore.users.get(user.email) || localStore.users.get(user.id);
-
-    if (!localUser) {
-      return res.status(404).json({ error: 'User account not found.' });
-    }
-
-    if (localUser.passwordHash) {
-      if (!currentPassword) {
-        return res.status(400).json({ error: 'Current password is required.' });
-      }
-      const isMatch = await bcrypt.compare(currentPassword, localUser.passwordHash);
-      if (!isMatch) {
-        return res.status(401).json({ error: 'Current password does not match.' });
-      }
-    }
-
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
-    localUser.passwordHash = newPasswordHash;
-    localStore.users.set(user.email, localUser);
-    localStore.users.set(user.id, localUser);
-
-    return res.json({ success: true, message: 'Password changed successfully.' });
-  } catch (err: any) {
-    console.error('[Change Password Error]:', err);
-    res.status(500).json({ error: err?.message || 'Failed to update password.' });
+    return res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: profile?.fullName || user.email.split('@')[0],
+        currencySymbol: profile?.currencySymbol || 'Rs.',
+        distanceUnit: profile?.distanceUnit || 'km',
+        volumeUnit: profile?.volumeUnit || 'L',
+        vehicles: profile?.vehicles || [],
+      },
+    });
+  } catch (err) {
+    console.error('Get Profile Error:', err);
+    return res.status(500).json({ error: 'Failed to retrieve profile' });
   }
 });
+
+export default router;

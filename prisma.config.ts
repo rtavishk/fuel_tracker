@@ -1,14 +1,13 @@
 import dotenv from 'dotenv';
-import path from 'path';
 import { defineConfig } from 'prisma/config';
 
-// Load .env and .env.local files
-dotenv.config({ path: path.join(process.cwd(), '.env') });
-dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+// Load environment variables from .env.local first, then .env
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   datasource: {
-    url: process.env.DIRECT_URL || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/fuel_tracker',
+    url: process.env.DATABASE_URL || '',
   },
 });

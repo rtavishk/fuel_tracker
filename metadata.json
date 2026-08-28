@@ -1,6 +1,6 @@
 {
-  "name": "Hybrid Telemetry System",
-  "description": "Dynamic multi-vehicle hybrid & EV fuel economy tracking, range gauge analytics, daily trip logger, and cost management for any hybrid, PHEV, or ICE vehicle.",
+  "name": "Fuel Tracker",
+  "description": "Vehicle mileage, gas cost, and engine maintenance schedule tracker with dual-odometer logic (distance-to-empty gauge vs cumulative odometer), predictive fuel calculators, and interactive analytics.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

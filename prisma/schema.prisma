@@ -1,158 +1,155 @@
-// Prisma Schema for BAIC BJ30e Fuel & Drive Tracker
-// Generated for persistent relational storage (PostgreSQL / SQLite / MySQL compatible)
-
-datasource db {
-  provider = "postgresql"
-}
+// This is your Prisma schema file for Supabase PostgreSQL (Database: fuel_tracker)
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-/// User profile and authentication record
-model User {
-  id            String          @id @default(cuid())
-  email         String          @unique
-  passwordHash  String?
-  name          String?
-  avatarUrl     String?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  sessions      Session[]
-  vehicleConfigs VehicleConfig[]
-  fuelEntries   FuelEntry[]
-  dailyTrips    DailyTrip[]
-  preTripLogs   PreTripLog[]
-  aiAudits      AiAuditReport[]
-
-  @@map("users")
+datasource db {
+  provider = "postgresql"
 }
 
-/// Database-backed user sessions
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+model Profile {
+  id                String                 @id @default(uuid()) @db.Uuid
+  email             String                 @unique
+  fullName          String?                @map("full_name")
+  avatarUrl         String?                @map("avatar_url")
+  currencySymbol    String                 @default("Rs.") @map("currency_symbol")
+  distanceUnit      String                 @default("km") @map("distance_unit")
+  volumeUnit        String                 @default("L") @map("volume_unit")
+  targetEfficiency  Float?                 @default(14.5) @map("target_efficiency")
+  icloudSyncEnabled Boolean                @default(true) @map("icloud_sync_enabled")
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicles          Vehicle[]
+  fuelEntries       FuelEntry[]
+  tripEntries       TripEntry[]
+  preTripEntries    PreTripEntry[]
+  fuelPriceRecords  FuelPriceRecord[]
+  maintenanceItems  MaintenanceSchedule[]
 
-  @@index([token])
-  @@index([userId])
-  @@map("sessions")
+  @@map("profiles")
 }
 
-/// Configuration settings for the vehicle profile (e.g. BAIC BJ30e)
-model VehicleConfig {
-  id                    String      @id @default(cuid())
-  userId                String
-  name                  String      @default("BAIC BJ30e")
-  model                 String      @default("BJ30e Hybrid Dual-Motor")
-  tankCapacityLitres    Float       @default(52.0)
-  fullRangeBenchmarkKm  Float?      // Custom full tank benchmark override in km (e.g. 665 km)
-  currency              String      @default("Rs")
-  distanceUnit          String      @default("km")
-  volumeUnit            String      @default("L")
-  theme                 String      @default("system") // "system" | "dark" | "light"
-  authEnabled           Boolean     @default(false)
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+model Vehicle {
+  id                        String                 @id @default(uuid()) @db.Uuid
+  userId                    String                 @map("user_id") @db.Uuid
+  name                      String
+  make                      String
+  model                     String
+  year                      Int
+  licensePlate              String?                @map("license_plate")
+  tankCapacityLitres        Float                  @default(47.0) @map("tank_capacity_litres")
+  fullRangeBenchmarkKm      Float                  @default(680.0) @map("full_range_benchmark_km")
+  currentCumulativeOdometer Float                  @default(0.0) @map("current_cumulative_odometer")
+  fuelType                  String                 @default("Petrol (95)") @map("fuel_type")
+  isPrimary                 Boolean                @default(true) @map("is_primary")
+  createdAt                 DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fuelEntries           FuelEntry[]
-  dailyTrips            DailyTrip[]
-  preTripLogs           PreTripLog[]
+  profile                   Profile                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fuelEntries               FuelEntry[]
+  tripEntries               TripEntry[]
+  preTripEntries            PreTripEntry[]
+  maintenanceItems          MaintenanceSchedule[]
 
-  @@index([userId])
-  @@map("vehicle_configs")
+  @@map("vehicles")
 }
 
-/// Core Fueling and Cluster Range Record
-/// Tracks pre-fuel and post-fueling remaining-range (DTE) cluster values
 model FuelEntry {
-  id                   String        @id @default(cuid())
-  userId               String
-  vehicleConfigId      String
-  
-  date                 DateTime      // Date & time of the refuel event
-  amountPaid           Float         // Total amount paid in configured currency (e.g., Rs 12,000)
-  pricePerLitre        Float         // Unit price of fuel (e.g., Rs 310.00/L)
-  litresFueled         Float         // Volume in litres (amountPaid / pricePerLitre)
-  
-  // Instrument Cluster Telemetry
-  currentOdometer      Float         // Car's remaining-range (DTE) gauge BEFORE fueling (e.g. 95 km)
-  afterFuelingOdometer Float?        // Car's remaining-range (DTE) gauge AFTER fueling (e.g. 670 km). Null = Pending
-  
-  gasStation           String?       // Gas vendor/station (e.g. "Ceypetco", "LIOC", "Sinopec", "Shell")
-  notes                String?       // Trip or driving conditions notes (e.g. "Highway drive with AC")
-  
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  id                     String    @id @default(uuid()) @db.Uuid
+  userId                 String    @map("user_id") @db.Uuid
+  vehicleId              String    @map("vehicle_id") @db.Uuid
+  date                   DateTime  @db.Date
+  time                   String?
+  amountPaid             Float     @map("amount_paid")
+  pricePerLitre          Float     @map("price_per_litre")
+  litresFueled           Float     @map("litres_fueled")
+  currentRangeGauge      Float     @map("current_range_gauge")
+  afterFuelingRangeGauge Float?   @map("after_fueling_range_gauge")
+  fuelStation            String?   @map("fuel_station")
+  notes                  String?
+  isFullTank             Boolean   @default(true) @map("is_full_tank")
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicleConfig        VehicleConfig @relation(fields: [vehicleConfigId], references: [id], onDelete: Cascade)
+  profile                Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle                Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
-  @@index([userId, date(sort: Desc)])
-  @@index([vehicleConfigId])
+  @@index([userId, vehicleId, date(sort: Desc)])
   @@map("fuel_entries")
 }
 
-/// Cumulative Vehicle Odometer Reading for daily trip tracking
-model DailyTrip {
-  id              String        @id @default(cuid())
-  userId          String
-  vehicleConfigId String
-  
-  date            DateTime      @db.Date // Specific calendar date (YYYY-MM-DD)
-  totalOdometer   Float         // Cumulative vehicle odometer value on the cluster (e.g. 14,280 km)
-  notes           String?       // Notes on daily commute, route, or terrain
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+model TripEntry {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId                  String    @map("user_id") @db.Uuid
+  vehicleId               String    @map("vehicle_id") @db.Uuid
+  date                    DateTime  @db.Date
+  totalCumulativeOdometer Float     @map("total_cumulative_odometer")
+  category                String    @default("Commute")
+  notes                   String?
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicleConfig   VehicleConfig @relation(fields: [vehicleConfigId], references: [id], onDelete: Cascade)
+  profile                 Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle                 Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
-  @@unique([vehicleConfigId, date])
-  @@index([userId, date(sort: Desc)])
-  @@map("daily_trips")
+  @@unique([vehicleId, date])
+  @@index([userId, vehicleId, date(sort: Asc)])
+  @@map("trip_entries")
 }
 
-/// Quick Pre-Drive Health & Fuel Check
-model PreTripLog {
-  id              String        @id @default(cuid())
-  userId          String
-  vehicleConfigId String
-  
-  date            DateTime      @default(now())
-  currentOdometer Float         // Instrument cluster remaining range (DTE) in km before starting trip
-  notes           String?
-  
-  createdAt       DateTime      @default(now())
+model PreTripEntry {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  vehicleId         String    @map("vehicle_id") @db.Uuid
+  loggedAt          DateTime  @default(now()) @map("logged_at") @db.Timestamptz(6)
+  currentRangeGauge Float     @map("current_range_gauge")
+  tripPurpose       String?   @map("trip_purpose")
+  notes             String?
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicleConfig   VehicleConfig @relation(fields: [vehicleConfigId], references: [id], onDelete: Cascade)
+  profile           Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle           Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
-  @@index([userId, date(sort: Desc)])
-  @@index([vehicleConfigId])
-  @@map("pre_trip_logs")
+  @@index([userId, vehicleId, loggedAt(sort: Desc)])
+  @@map("pretrip_entries")
 }
 
-/// AI Diagnosis & Telemetry Audit Log
-model AiAuditReport {
-  id               String   @id @default(cuid())
-  userId           String
-  analyzedEntries  Int      // Number of fuel records audited
-  economyRating    String   // e.g. "OPTIMAL", "AVERAGE", "HIGH_CONSUMPTION"
-  avgEconomyKmPerL Float
-  recommendations  String[] // Array of actionable hybrid driving recommendations
-  rawResponse      String?  // Complete generated summary
-  createdAt        DateTime @default(now())
+model FuelPriceRecord {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  price          Float
+  effectiveMonth String    @map("effective_month")
+  dateRecorded   DateTime  @default(now()) @map("date_recorded") @db.Timestamptz(6)
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile        Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("ai_audit_reports")
+  @@map("fuel_price_records")
+}
+
+model MaintenanceSchedule {
+  id                  String    @id @default(uuid()) @db.Uuid
+  userId              String    @map("user_id") @db.Uuid
+  vehicleId           String    @map("vehicle_id") @db.Uuid
+  title               String
+  category            String
+  intervalKm          Int       @map("interval_km")
+  intervalMonths      Int?      @map("interval_months")
+  lastServiceOdometer Float     @default(0.0) @map("last_service_odometer")
+  lastServiceDate     DateTime  @map("last_service_date") @db.Date
+  estimatedCost       Float?    @map("estimated_cost")
+  priority            String    @default("Medium")
+  notes               String?
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  profile             Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle             Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@map("maintenance_schedules")
 }

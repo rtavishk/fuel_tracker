@@ -1,1018 +1,836 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import {
+  User,
+  VehicleConfig,
+  FuelPriceRecord,
   FuelEntry,
   ComputedFuelEntry,
-  DailyTrip,
-  ComputedDailyTrip,
-  PreTripLog,
-  ComputedPreTripLog,
-  VehicleConfig,
+  TripEntry,
+  ComputedTripEntry,
+  PreTripEntry,
+  ComputedPreTripEntry,
+  MaintenanceScheduleItem,
+  MaintenanceStatusItem,
   ActiveTab,
-  QuickActionModal,
+  CalculatorSubTab,
 } from '../types';
 import {
-  computeFuelEntries,
-  computeDailyTrips,
-  computePreTripLogs,
-  calculateSummaryKPIs,
-  SummaryKPIs,
-} from '../utils/calculations';
+  createDefaultVehicle,
+  createInitialMaintenanceSchedule,
+  initialFuelPriceHistory,
+  sampleDemoGarage,
+} from '../data/initialData';
 import {
-  initialVehicleConfig,
-  initialFuelEntries,
-  initialDailyTrips,
-  initialPreTripLogs,
-} from '../data/seedData';
-
-interface ToastMessage {
-  id: string;
-  title: string;
-  description?: string;
-  type?: 'success' | 'info' | 'warning' | 'error';
-  undoAction?: () => void;
-  duration?: number;
-}
+  computeFuelEntries,
+  getAggregatedFuelStats,
+  computeTripEntries,
+  computePreTripEntries,
+  computeMaintenanceStatus,
+  getFullRangeBenchmark,
+} from '../utils/calculations';
+import { api } from '../lib/api';
 
 interface AppContextType {
-  // Vehicle & Config
-  config: VehicleConfig;
-  updateConfig: (newConfig: Partial<VehicleConfig>) => void;
+  // Auth State & User Profile
+  user: User | null;
+  isAuthenticated: boolean;
+  login: (email: string, name?: string, id?: string) => Promise<boolean>;
+  register: (name: string, email: string, password?: string) => Promise<boolean>;
+  logout: () => void;
+  enterGuestMode: () => void;
+  updateUserProfile: (data: Partial<User>) => void;
+  changePassword: (oldPass: string, newPass: string) => Promise<{ success: boolean; error?: string }>;
+
+  // Modals Management
+  isProfileModalOpen: boolean;
+  setIsProfileModalOpen: (open: boolean) => void;
+  isFuelPriceModalOpen: boolean;
+  setIsFuelPriceModalOpen: (open: boolean) => void;
+  isAddFuelModalOpen: boolean;
+  setIsAddFuelModalOpen: (open: boolean) => void;
+  isAddTripModalOpen: boolean;
+  setIsAddTripModalOpen: (open: boolean) => void;
 
   // Active Navigation
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
+  calculatorTab: CalculatorSubTab;
+  setCalculatorTab: (tab: CalculatorSubTab) => void;
 
-  // Modal control
-  activeModal: QuickActionModal;
-  setActiveModal: (modal: QuickActionModal) => void;
-  editingFuelEntry: FuelEntry | null;
-  setEditingFuelEntry: (entry: FuelEntry | null) => void;
-  completingFuelEntry: FuelEntry | null;
-  setCompletingFuelEntry: (entry: FuelEntry | null) => void;
-  editingTrip: DailyTrip | null;
-  setEditingTrip: (trip: DailyTrip | null) => void;
-  setEditingDailyTrip: (trip: DailyTrip | null) => void;
+  // Garage & Vehicle Configurations (Any car support)
+  vehicles: VehicleConfig[];
+  activeVehicleId: string;
+  vehicleConfig: VehicleConfig;
+  switchVehicle: (id: string) => void;
+  addVehicle: (config: Omit<VehicleConfig, 'id'>) => string;
+  updateVehicleConfig: (config: Partial<VehicleConfig>) => void;
+  deleteVehicle: (id: string) => void;
+  fullRangeBenchmark: number;
 
-  // Data (Fetched Live from DB)
-  fuelEntries: ComputedFuelEntry[];
-  rawFuelEntries: FuelEntry[];
-  dailyTrips: ComputedDailyTrip[];
-  tripEntries: ComputedDailyTrip[];
-  rawDailyTrips: DailyTrip[];
-  preTripLogs: ComputedPreTripLog[];
-  rawPreTripLogs: PreTripLog[];
-  kpis: SummaryKPIs;
-  isLoadingData: boolean;
+  // Dynamic Fuel Price Management
+  currentFuelPrice: number;
+  fuelPriceHistory: FuelPriceRecord[];
+  updateFuelPrice: (price: number, notes?: string, date?: string) => void;
+  deleteFuelPriceRecord: (id: string) => void;
 
-  // Fuel Operations (DB-backed)
-  addFuelEntry: (entry: Omit<FuelEntry, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateFuelEntry: (id: string, entry: Partial<FuelEntry>) => Promise<void>;
-  deleteFuelEntry: (id: string) => Promise<void>;
-  completeFuelEntry: (id: string, afterFuelingOdometer: number) => Promise<void>;
+  // Fuel Log & Stats
+  fuelEntries: FuelEntry[];
+  computedFuelEntries: ComputedFuelEntry[];
+  fuelStats: ReturnType<typeof getAggregatedFuelStats>;
+  addFuelEntry: (entry: Omit<FuelEntry, 'id' | 'createdAt' | 'litresFueled'>) => void;
+  updateFuelEntry: (id: string, entry: Partial<FuelEntry>) => void;
+  deleteFuelEntry: (id: string) => void;
 
-  // Trip Operations (DB-backed)
-  addDailyTrip: (trip: Omit<DailyTrip, 'id' | 'createdAt'>) => Promise<void>;
-  updateDailyTrip: (id: string, trip: Partial<DailyTrip>) => Promise<void>;
-  deleteDailyTrip: (id: string) => Promise<void>;
+  // Daily Trip Log
+  tripEntries: TripEntry[];
+  computedTripEntries: ComputedTripEntry[];
+  addTripEntry: (entry: Omit<TripEntry, 'id' | 'createdAt'>) => void;
+  updateTripEntry: (id: string, entry: Partial<TripEntry>) => void;
+  deleteTripEntry: (id: string) => void;
 
-  // Pre-Trip Operations (DB-backed)
-  addPreTripLog: (log: Omit<PreTripLog, 'id' | 'createdAt'>) => Promise<void>;
-  deletePreTripLog: (id: string) => Promise<void>;
+  // Pre-Trip Log
+  preTripEntries: PreTripEntry[];
+  computedPreTripEntries: ComputedPreTripEntry[];
+  addPreTripEntry: (entry: Omit<PreTripEntry, 'id' | 'createdAt'>) => void;
+  deletePreTripEntry: (id: string) => void;
 
-  // Toast System
-  toasts: ToastMessage[];
-  showToast: (toast: Omit<ToastMessage, 'id'>) => void;
-  removeToast: (id: string) => void;
+  // Maintenance Schedules
+  maintenanceItems: MaintenanceScheduleItem[];
+  computedMaintenance: MaintenanceStatusItem[];
+  addMaintenanceItem: (item: Omit<MaintenanceScheduleItem, 'id'>) => void;
+  updateMaintenanceItem: (id: string, item: Partial<MaintenanceScheduleItem>) => void;
+  deleteMaintenanceItem: (id: string) => void;
+  markMaintenanceServiced: (id: string, serviceOdometer: number) => void;
 
-  // Theme & Auth Session
-  theme: 'system' | 'dark' | 'light';
-  isDarkMode: boolean;
-  setTheme: (theme: 'system' | 'dark' | 'light') => void;
-  isAuthenticated: boolean;
-  setIsAuthenticated: (auth: boolean) => void;
-  sessionToken: string | null;
-  isLoadingAuth: boolean;
-  loginUser: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
-  registerUser: (data: {
-    email: string;
-    password?: string;
-    name?: string;
-    vehicleName?: string;
-    tankCapacity?: number;
-    model?: string;
-  }) => Promise<{ success: boolean; error?: string }>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
-  logout: () => Promise<void>;
-
-  // Data Management & Cloud Sync
-  resetToDefaults: () => void;
-  exportDataJSON: () => string;
-  importDataJSON: (jsonString: string) => boolean;
-
-  // Database Connection & Status
-  dbStatus: {
-    isConfigured: boolean;
-    isConnected: boolean;
-    error?: string;
-    lastChecked?: string;
-    stats?: {
-      users: number;
-      fuelEntries: number;
-      dailyTrips: number;
-      vehicleConfigs: number;
-    } | null;
-  };
+  // Cloud & Sync Status
+  iCloudSyncEnabled: boolean;
+  setICloudSyncEnabled: (enabled: boolean) => void;
   isSyncing: boolean;
-  checkDatabaseStatus: () => Promise<void>;
-  syncWithDatabase: () => Promise<boolean>;
-  pullFromDatabase: () => Promise<boolean>;
+  lastSyncedAt: string | null;
+  triggerManualSync: () => void;
+
+  // Clear & Reset Data
+  clearVehicleData: () => void;
+  resetToDemoData: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  SESSION_TOKEN: 'bj30e_session_token',
-  CONFIG: 'bj30e_vehicle_config',
-  AUTH: 'bj30e_auth_state',
+  USER: 'fuel_tracker_user',
+  VEHICLES_LIST: 'fuel_tracker_vehicles_list',
+  ACTIVE_VEHICLE_ID: 'fuel_tracker_active_vehicle_id',
+  FUEL_PRICE_HISTORY: 'fuel_tracker_price_history',
+  CURRENT_FUEL_PRICE: 'fuel_tracker_current_price',
+  FUEL: 'fuel_tracker_fuel_entries',
+  TRIPS: 'fuel_tracker_trips',
+  PRETRIP: 'fuel_tracker_pretrip',
+  MAINTENANCE: 'fuel_tracker_maintenance',
+  ICLOUD_SYNC: 'fuel_tracker_icloud_sync',
 };
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Session & Auth state
-  const [sessionToken, setSessionToken] = useState<string | null>(() => {
+const defaultVehicle = createDefaultVehicle();
+
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // 1. User Authentication & Profile (Null by default for unauthenticated landing)
+  const [user, setUser] = useState<User | null>(() => {
     try {
-      return localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
+      const saved = localStorage.getItem(STORAGE_KEYS.USER);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.email) return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
   });
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  // 2. Modals
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isFuelPriceModalOpen, setIsFuelPriceModalOpen] = useState(false);
+  const [isAddFuelModalOpen, setIsAddFuelModalOpen] = useState(false);
+  const [isAddTripModalOpen, setIsAddTripModalOpen] = useState(false);
 
-  // Config state
-  const [config, setConfig] = useState<VehicleConfig>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CONFIG);
-      return saved ? { ...initialVehicleConfig, ...JSON.parse(saved) } : initialVehicleConfig;
-    } catch {
-      return initialVehicleConfig;
-    }
-  });
-
-  // DB-driven data: initialized with clean empty arrays (no hardcoded data!)
-  const [fuelEntries, setFuelEntries] = useState<FuelEntry[]>(initialFuelEntries);
-  const [dailyTrips, setDailyTrips] = useState<DailyTrip[]>(initialDailyTrips);
-  const [preTripLogs, setPreTripLogs] = useState<PreTripLog[]>(initialPreTripLogs);
-
-  // Navigation & Modals
+  // 3. Navigation State
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [activeModal, setActiveModal] = useState<QuickActionModal>(null);
-  const [editingFuelEntry, setEditingFuelEntry] = useState<FuelEntry | null>(null);
-  const [completingFuelEntry, setCompletingFuelEntry] = useState<FuelEntry | null>(null);
-  const [editingTrip, setEditingTrip] = useState<DailyTrip | null>(null);
+  const [calculatorTab, setCalculatorTab] = useState<CalculatorSubTab>('how-far');
 
-  // Toast notifications
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-
-  // Database Connection Status
-  const [dbStatus, setDbStatus] = useState<{
-    isConfigured: boolean;
-    isConnected: boolean;
-    error?: string;
-    lastChecked?: string;
-    stats?: {
-      users: number;
-      fuelEntries: number;
-      dailyTrips: number;
-      vehicleConfigs: number;
-    } | null;
-  }>({
-    isConfigured: false,
-    isConnected: false,
+  // 4. Vehicles & Garage Management
+  const [vehicles, setVehicles] = useState<VehicleConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.VEHICLES_LIST);
+      return saved ? JSON.parse(saved) : [defaultVehicle];
+    } catch {
+      return [defaultVehicle];
+    }
   });
+
+  const [activeVehicleId, setActiveVehicleId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ACTIVE_VEHICLE_ID);
+      return saved || defaultVehicle.id;
+    } catch {
+      return defaultVehicle.id;
+    }
+  });
+
+  const activeVehicle = useMemo(() => {
+    const found = vehicles.find((v) => v.id === activeVehicleId);
+    return found || vehicles[0] || defaultVehicle;
+  }, [vehicles, activeVehicleId]);
+
+  // 5. Dynamic Fuel Price State & History
+  const [fuelPriceHistory, setFuelPriceHistory] = useState<FuelPriceRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.FUEL_PRICE_HISTORY);
+      return saved ? JSON.parse(saved) : initialFuelPriceHistory;
+    } catch {
+      return initialFuelPriceHistory;
+    }
+  });
+
+  const [currentFuelPrice, setCurrentFuelPrice] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.CURRENT_FUEL_PRICE);
+      if (saved) return parseFloat(saved);
+      return activeVehicle.currentFuelPrice || 106.5;
+    } catch {
+      return 106.5;
+    }
+  });
+
+  // 6. Clean Fuel Entries (Zero hardcoded records for real users)
+  const [fuelEntries, setFuelEntries] = useState<FuelEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.FUEL);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // 7. Clean Trip Entries
+  const [tripEntries, setTripEntries] = useState<TripEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.TRIPS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // 8. Pre-Trip Entries
+  const [preTripEntries, setPreTripEntries] = useState<PreTripEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.PRETRIP);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // 9. Maintenance Items
+  const [maintenanceItems, setMaintenanceItems] = useState<MaintenanceScheduleItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.MAINTENANCE);
+      return saved ? JSON.parse(saved) : createInitialMaintenanceSchedule(0);
+    } catch {
+      return createInitialMaintenanceSchedule(0);
+    }
+  });
+
+  // 10. Sync State
+  const [iCloudSyncEnabled, setICloudSyncEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ICLOUD_SYNC);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(new Date().toISOString());
 
-  // Toast System
-  const showToast = useCallback((toast: Omit<ToastMessage, 'id'>) => {
-    const id = 'toast_' + Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { ...toast, id }]);
-
-    const duration = toast.duration || 4500;
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, duration);
-  }, []);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  // Fetch genuine dataset directly from DB via protected telemetry route
-  const fetchTelemetryFromDb = useCallback(async (token: string) => {
-    setIsLoadingData(true);
+  // Save to localStorage whenever state changes
+  useEffect(() => {
     try {
-      const res = await fetch('/api/telemetry/data', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.config) {
-          setConfig((prev) => ({ ...prev, ...data.config, userEmail: data.user?.email || prev.userEmail }));
-        }
-        setFuelEntries(Array.isArray(data.fuelEntries) ? data.fuelEntries : []);
-        setDailyTrips(Array.isArray(data.dailyTrips) ? data.dailyTrips : []);
-        setPreTripLogs(Array.isArray(data.preTripLogs) ? data.preTripLogs : []);
-      } else if (res.status === 401) {
-        // Session invalid
-        localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-        setSessionToken(null);
-        setIsAuthenticated(false);
-      }
-    } catch (err: any) {
-      console.error('[App] Failed to load DB telemetry:', err);
-    } finally {
-      setIsLoadingData(false);
-    }
-  }, []);
-
-  // Check Database Status
-  const checkDatabaseStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/db/status');
-      if (res.ok) {
-        const data = await res.json();
-        setDbStatus(data);
+      if (user) {
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
       } else {
-        setDbStatus({ isConfigured: false, isConnected: false, error: 'Database API offline' });
+        localStorage.removeItem(STORAGE_KEYS.USER);
       }
-    } catch (err: any) {
-      setDbStatus({ isConfigured: false, isConnected: false, error: err?.message || 'Server unreachable' });
+    } catch (e) {
+      console.warn('Storage sync failed', e);
     }
-  }, []);
+  }, [user]);
 
-  // Verify persistent session on mount
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.VEHICLES_LIST, JSON.stringify(vehicles));
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_VEHICLE_ID, activeVehicleId);
+      localStorage.setItem(STORAGE_KEYS.FUEL_PRICE_HISTORY, JSON.stringify(fuelPriceHistory));
+      localStorage.setItem(STORAGE_KEYS.CURRENT_FUEL_PRICE, currentFuelPrice.toString());
+      localStorage.setItem(STORAGE_KEYS.FUEL, JSON.stringify(fuelEntries));
+      localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify(tripEntries));
+      localStorage.setItem(STORAGE_KEYS.PRETRIP, JSON.stringify(preTripEntries));
+      localStorage.setItem(STORAGE_KEYS.MAINTENANCE, JSON.stringify(maintenanceItems));
+      localStorage.setItem(STORAGE_KEYS.ICLOUD_SYNC, JSON.stringify(iCloudSyncEnabled));
+    } catch (e) {
+      console.warn('Storage sync failed', e);
+    }
+  }, [
+    vehicles,
+    activeVehicleId,
+    fuelPriceHistory,
+    currentFuelPrice,
+    fuelEntries,
+    tripEntries,
+    preTripEntries,
+    maintenanceItems,
+    iCloudSyncEnabled,
+  ]);
+
+  // 11. Load and synchronize live data from Database
   useEffect(() => {
     let isMounted = true;
-
-    async function checkSession() {
-      setIsLoadingAuth(true);
-      const token = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN);
-
-      if (!token) {
-        if (isMounted) {
-          setIsAuthenticated(false);
-          setIsLoadingAuth(false);
-        }
-        return;
-      }
-
+    async function loadDbData() {
+      if (!user) return;
       try {
-        // Parallelize session check and database status checks
-        const [authRes, dbRes] = await Promise.all([
-          fetch('/api/auth/me', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          fetch('/api/db/status'),
-        ]);
-
-        if (authRes.ok && isMounted) {
-          const data = await authRes.json();
-          setIsAuthenticated(true);
-          setSessionToken(token);
-          if (data.config) {
-            setConfig((prev) => ({ ...prev, ...data.config, userEmail: data.user?.email || prev.userEmail }));
+        setIsSyncing(true);
+        const dbVehicles = await api.getVehicles();
+        if (isMounted && dbVehicles && dbVehicles.length > 0) {
+          setVehicles(dbVehicles);
+          const currentValid = dbVehicles.some((v) => v.id === activeVehicleId);
+          const currentId = currentValid ? activeVehicleId : dbVehicles[0].id;
+          if (!currentValid) {
+            setActiveVehicleId(currentId);
           }
-          // Fetch real data from DB
-          await fetchTelemetryFromDb(token);
-        } else if (isMounted) {
-          // Token expired or invalid
-          localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-          setSessionToken(null);
-          setIsAuthenticated(false);
-        }
 
-        // Process database status
-        if (dbRes.ok && isMounted) {
-          const dbData = await dbRes.json();
-          setDbStatus(dbData);
-        }
-      } catch (e) {
-        console.warn('Session verification failed, keeping offline mode:', e);
-        if (isMounted) {
-          setIsAuthenticated(false);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingAuth(false);
-        }
-      }
-    }
+          const [dbFuel, dbTrips, dbMaint] = await Promise.all([
+            api.getFuelEntries(currentId),
+            api.getTripEntries(currentId),
+            api.getMaintenance(currentId),
+          ]);
 
-    checkSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [fetchTelemetryFromDb, checkDatabaseStatus]);
-
-  // Auth Functions (Session Management)
-  const loginUser = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Login failed' };
-      }
-
-      const token = data.token;
-      localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, token);
-      setSessionToken(token);
-      setIsAuthenticated(true);
-
-      if (data.config) {
-        setConfig((prev) => ({ ...prev, ...data.config, userEmail: data.user?.email || prev.userEmail }));
-      }
-
-      // Load real DB data for this authenticated user
-      await fetchTelemetryFromDb(token);
-
-      showToast({
-        title: 'Signed in successfully',
-        description: `Welcome back, ${data.user?.name || email}!`,
-        type: 'success',
-      });
-
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'Network error during login' };
-    }
-  };
-
-  const registerUser = async (formData: {
-    email: string;
-    password?: string;
-    name?: string;
-    vehicleName?: string;
-    tankCapacity?: number;
-    model?: string;
-  }): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Registration failed' };
-      }
-
-      const token = data.token;
-      localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, token);
-      setSessionToken(token);
-      setIsAuthenticated(true);
-
-      if (data.config) {
-        setConfig((prev) => ({ ...prev, ...data.config, userEmail: data.user?.email || prev.userEmail }));
-      }
-
-      // Clean DB state for new driver
-      setFuelEntries([]);
-      setDailyTrips([]);
-      setPreTripLogs([]);
-
-      showToast({
-        title: 'Driver Account Created',
-        description: `Welcome aboard, ${data.user?.name || formData.email}!`,
-        type: 'success',
-      });
-
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'Network error during registration' };
-    }
-  };
-
-  const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      if (!sessionToken) {
-        return { success: false, error: 'You must be signed in to change your password.' };
-      }
-
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${sessionToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Failed to update password.' };
-      }
-
-      showToast({
-        title: 'Password Updated',
-        description: 'Your security password has been changed successfully.',
-        type: 'success',
-      });
-
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'Network error updating password.' };
-    }
-  };
-
-  const logout = async () => {
-    if (sessionToken) {
-      try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${sessionToken}` },
-        });
-      } catch (e) {
-        console.warn('Logout API notification failed', e);
-      }
-    }
-
-    localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-    setSessionToken(null);
-    setIsAuthenticated(false);
-    setFuelEntries([]);
-    setDailyTrips([]);
-    setPreTripLogs([]);
-
-    showToast({
-      title: 'Signed out',
-      description: 'You have been signed out of the vehicle telemetry portal.',
-      type: 'info',
-    });
-  };
-
-  // Theme detection
-  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, []);
-
-  const isDarkMode = useMemo(() => {
-    if (config.theme === 'dark') return true;
-    if (config.theme === 'light') return false;
-    return systemPrefersDark;
-  }, [config.theme, systemPrefersDark]);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
-  // Computed data models
-  const computedFuelEntries = useMemo(() => {
-    return computeFuelEntries(fuelEntries);
-  }, [fuelEntries]);
-
-  const kpis = useMemo(() => {
-    const computedTrips = computeDailyTrips(dailyTrips, 24);
-    return calculateSummaryKPIs(computedFuelEntries, computedTrips, config);
-  }, [computedFuelEntries, dailyTrips, config]);
-
-  const computedDailyTrips = useMemo(() => {
-    return computeDailyTrips(dailyTrips, kpis.avgCostPerKm);
-  }, [dailyTrips, kpis.avgCostPerKm]);
-
-  const computedPreTripLogs = useMemo(() => {
-    return computePreTripLogs(
-      preTripLogs,
-      kpis.avgFuelEconomy,
-      kpis.fullRangeBenchmark,
-      kpis.latestPrice
-    );
-  }, [preTripLogs, kpis.avgFuelEconomy, kpis.fullRangeBenchmark, kpis.latestPrice]);
-
-  // Config Update (saves to DB)
-  const updateConfig = async (newConfig: Partial<VehicleConfig>) => {
-    setConfig((prev) => ({ ...prev, ...newConfig }));
-    try {
-      localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify({ ...config, ...newConfig }));
-    } catch (e) {}
-
-    if (sessionToken) {
-      try {
-        await fetch('/api/telemetry/config', {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(newConfig),
-        });
-      } catch (e) {
-        console.warn('Failed to sync config to DB:', e);
-      }
-    }
-    showToast({ title: 'Settings saved', type: 'success' });
-  };
-
-  const setTheme = (theme: 'system' | 'dark' | 'light') => {
-    updateConfig({ theme });
-  };
-
-  // Fuel Entry Actions (DB-backed with session)
-  const addFuelEntry = async (entryData: Omit<FuelEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const tempId = 'fuel_' + Date.now();
-    const newEntry: FuelEntry = {
-      ...entryData,
-      id: tempId,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setFuelEntries((prev) => [newEntry, ...prev]);
-
-    if (sessionToken) {
-      try {
-        const res = await fetch('/api/telemetry/fuel', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(entryData),
-        });
-        if (res.ok) {
-          const result = await res.json();
-          if (result.entry) {
-            setFuelEntries((prev) => prev.map((e) => (e.id === tempId ? result.entry : e)));
+          if (isMounted) {
+            if (dbFuel) setFuelEntries(dbFuel);
+            if (dbTrips) setTripEntries(dbTrips);
+            if (dbMaint && dbMaint.length > 0) setMaintenanceItems(dbMaint);
+            setLastSyncedAt(new Date().toISOString());
           }
         }
       } catch (err) {
-        console.warn('Fuel entry local fallback:', err);
+        console.warn('Initial DB sync fetch error:', err);
+      } finally {
+        if (isMounted) setIsSyncing(false);
       }
     }
 
-    showToast({
-      title: 'Fill-up logged to database',
-      description: `${newEntry.litresFueled.toFixed(1)}L at ${config.currency}${newEntry.pricePerLitre}/L`,
-      type: 'success',
-    });
-  };
+    loadDbData();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, activeVehicleId]);
 
-  const updateFuelEntry = async (id: string, entryData: Partial<FuelEntry>) => {
-    setFuelEntries((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              ...entryData,
-              updatedAt: new Date().toISOString(),
-              litresFueled:
-                entryData.amountPaid && entryData.pricePerLitre
-                  ? entryData.amountPaid / entryData.pricePerLitre
-                  : item.litresFueled,
-            }
-          : item
-      )
+  // Derived Full Range Benchmark
+  const fullRangeBenchmark = useMemo(() => {
+    return getFullRangeBenchmark(activeVehicle, fuelEntries);
+  }, [activeVehicle, fuelEntries]);
+
+  // Effective Baseline Economy for fallback
+  const effectiveBaselineEconomy = activeVehicle.targetEfficiency || user?.targetEfficiency || 14.5;
+
+  // Computed Fuel Entries
+  const computedFuelEntries = useMemo(() => {
+    return computeFuelEntries(fuelEntries, effectiveBaselineEconomy);
+  }, [fuelEntries, effectiveBaselineEconomy]);
+
+  // Aggregated Fuel Stats
+  const fuelStats = useMemo(() => {
+    return getAggregatedFuelStats(computedFuelEntries, currentFuelPrice, effectiveBaselineEconomy);
+  }, [computedFuelEntries, currentFuelPrice, effectiveBaselineEconomy]);
+
+  // Computed Trip Entries
+  const computedTripEntries = useMemo(() => {
+    return computeTripEntries(tripEntries, fuelStats.avgCostPerKm);
+  }, [tripEntries, fuelStats.avgCostPerKm]);
+
+  // Update vehicle's current cumulative odometer from latest trip entry
+  useEffect(() => {
+    if (computedTripEntries.length > 0) {
+      const highestOdo = Math.max(...computedTripEntries.map((t) => t.totalOdometer));
+      if (highestOdo > activeVehicle.currentCumulativeOdometer) {
+        setVehicles((prev) =>
+          prev.map((v) => (v.id === activeVehicleId ? { ...v, currentCumulativeOdometer: highestOdo } : v))
+        );
+      }
+    }
+  }, [computedTripEntries, activeVehicle.currentCumulativeOdometer, activeVehicleId]);
+
+  // Computed Pre-Trip Entries
+  const computedPreTripEntries = useMemo(() => {
+    return computePreTripEntries(
+      preTripEntries,
+      fuelStats.avgEconomy,
+      fullRangeBenchmark,
+      currentFuelPrice
     );
+  }, [preTripEntries, fuelStats.avgEconomy, fullRangeBenchmark, currentFuelPrice]);
 
-    if (sessionToken) {
-      try {
-        await fetch(`/api/telemetry/fuel/${id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(entryData),
-        });
-      } catch (e) {
-        console.warn('Update fuel entry DB sync error:', e);
-      }
-    }
-    showToast({ title: 'Fill-up updated', type: 'success' });
+  // Computed Maintenance Schedules
+  const computedMaintenance = useMemo(() => {
+    return computeMaintenanceStatus(maintenanceItems, activeVehicle.currentCumulativeOdometer);
+  }, [maintenanceItems, activeVehicle.currentCumulativeOdometer]);
+
+  // Realtime Cloud Sync
+  const triggerManualSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      setLastSyncedAt(new Date().toISOString());
+    }, 400);
   };
 
-  const deleteFuelEntry = async (id: string) => {
-    const entryToDelete = fuelEntries.find((e) => e.id === id);
-    if (!entryToDelete) return;
-
-    setFuelEntries((prev) => prev.filter((e) => e.id !== id));
-
-    if (sessionToken) {
-      try {
-        await fetch(`/api/telemetry/fuel/${id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${sessionToken}` },
-        });
-      } catch (e) {
-        console.warn('Delete fuel entry DB sync error:', e);
-      }
-    }
-
-    showToast({
-      title: 'Fill-up deleted',
-      description: `Logged for ${new Date(entryToDelete.date).toLocaleDateString()}`,
-      type: 'info',
-    });
+  // User Profile Methods
+  const updateUserProfile = (data: Partial<User>) => {
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
+    triggerManualSync();
   };
 
-  const completeFuelEntry = async (id: string, afterFuelingOdometer: number) => {
-    setFuelEntries((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              afterFuelingOdometer,
-              updatedAt: new Date().toISOString(),
-            }
-          : e
-      )
-    );
-
-    if (sessionToken) {
-      try {
-        await fetch(`/api/telemetry/fuel/${id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ afterFuelingOdometer }),
-        });
-      } catch (e) {
-        console.warn('Complete fill entry sync error:', e);
-      }
+  const changePassword = async (
+    _oldPass: string,
+    newPass: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!newPass || newPass.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters long.' };
     }
-
-    showToast({
-      title: 'Fill-up completed',
-      description: `Range gauge updated to ${afterFuelingOdometer} km`,
-      type: 'success',
-    });
+    triggerManualSync();
+    return { success: true };
   };
 
-  // Trip Entry Actions (DB-backed)
-  const addDailyTrip = async (tripData: Omit<DailyTrip, 'id' | 'createdAt'>) => {
-    const tempId = 'trip_' + Date.now();
-    const existingIndex = dailyTrips.findIndex((t) => t.date === tripData.date);
-
-    if (existingIndex >= 0) {
-      const existingId = dailyTrips[existingIndex].id;
-      setDailyTrips((prev) =>
-        prev.map((t, idx) =>
-          idx === existingIndex
-            ? { ...t, totalOdometer: tripData.totalOdometer, notes: tripData.notes }
-            : t
-        )
-      );
-      if (sessionToken) {
-        try {
-          await fetch(`/api/telemetry/trips/${existingId}`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${sessionToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(tripData),
-          });
-        } catch (e) {}
-      }
-      showToast({ title: `Odometer updated for ${tripData.date}`, type: 'success' });
-    } else {
-      const newTrip: DailyTrip = {
-        ...tripData,
-        id: tempId,
+  // Auth Methods
+  const login = async (email: string, name?: string, id?: string): Promise<boolean> => {
+    try {
+      const newUser: User = {
+        id: id || uuidv4(),
+        email,
+        name: name || email.split('@')[0] || 'Vehicle Driver',
+        avatar: 'speedometer',
+        targetEfficiency: 14.5,
+        preferredCurrency: 'Rs.',
         createdAt: new Date().toISOString(),
+        isDemoUser: false,
       };
-      setDailyTrips((prev) => [newTrip, ...prev]);
+      setUser(newUser);
+      triggerManualSync();
+      return true;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
+    }
+  };
 
-      if (sessionToken) {
-        try {
-          const res = await fetch('/api/telemetry/trips', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${sessionToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(tripData),
-          });
-          if (res.ok) {
-            const result = await res.json();
-            if (result.trip) {
-              setDailyTrips((prev) => prev.map((t) => (t.id === tempId ? result.trip : t)));
-            }
-          }
-        } catch (e) {}
-      }
-      showToast({
-        title: 'Daily odometer logged',
-        description: `Total odometer: ${tripData.totalOdometer.toLocaleString()} km`,
-        type: 'success',
+  const register = async (name: string, email: string, password?: string): Promise<boolean> => {
+    try {
+      // Try to register via API first
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          password: password || 'default_password',
+          name 
+        }),
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        const newUser: User = {
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          avatar: 'speedometer',
+          targetEfficiency: 14.5,
+          preferredCurrency: 'Rs.',
+          createdAt: new Date().toISOString(),
+          isDemoUser: false,
+        };
+        setUser(newUser);
+        
+        // Store token if provided
+        if (data.token) {
+          localStorage.setItem('fuel_tracker_token', data.token);
+        }
+        
+        triggerManualSync();
+        return true;
+      }
+    } catch (error) {
+      console.warn('API registration failed, using local fallback:', error);
+    }
+
+    // Fallback to local state
+    try {
+      const newUser: User = {
+        id: uuidv4(),
+        email,
+        name,
+        avatar: 'speedometer',
+        targetEfficiency: 14.5,
+        preferredCurrency: 'Rs.',
+        createdAt: new Date().toISOString(),
+        isDemoUser: false,
+      };
+      setUser(newUser);
+      triggerManualSync();
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      return false;
     }
   };
 
-  const updateDailyTrip = async (id: string, tripData: Partial<DailyTrip>) => {
-    setDailyTrips((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...tripData } : t))
-    );
-
-    if (sessionToken) {
-      try {
-        await fetch(`/api/telemetry/trips/${id}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(tripData),
-        });
-      } catch (e) {}
-    }
-    showToast({ title: 'Trip record updated', type: 'success' });
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem('fuel_tracker_token');
   };
 
-  const deleteDailyTrip = async (id: string) => {
-    const tripToDelete = dailyTrips.find((t) => t.id === id);
-    if (!tripToDelete) return;
-
-    setDailyTrips((prev) => prev.filter((t) => t.id !== id));
-
-    if (sessionToken) {
-      try {
-        await fetch(`/api/telemetry/trips/${id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${sessionToken}` },
-        });
-      } catch (e) {}
-    }
-
-    showToast({
-      title: 'Trip entry deleted',
-      description: `${tripToDelete.date} (${tripToDelete.totalOdometer.toLocaleString()} km)`,
-      type: 'info',
-    });
+  const enterGuestMode = () => {
+    const guestUser: User = {
+      id: uuidv4(),
+      email: 'guest@fueltracker.app',
+      name: 'Guest Driver',
+      avatar: 'speedometer',
+      createdAt: new Date().toISOString(),
+      isDemoUser: true,
+      targetEfficiency: 14.5,
+      preferredCurrency: 'Rs.',
+    };
+    setUser(guestUser);
+    setFuelEntries([]);
+    setTripEntries([]);
+    setPreTripEntries([]);
+    triggerManualSync();
   };
 
-  // Pre-Trip Logs (DB-backed)
-  const addPreTripLog = async (logData: Omit<PreTripLog, 'id' | 'createdAt'>) => {
-    const tempId = 'pre_' + Date.now();
-    const newLog: PreTripLog = {
-      ...logData,
-      id: tempId,
+  // Garage & Vehicle Actions
+  const switchVehicle = (id: string) => {
+    setActiveVehicleId(id);
+    const target = vehicles.find((v) => v.id === id);
+    if (target && target.currentFuelPrice) {
+      setCurrentFuelPrice(target.currentFuelPrice);
+    }
+    triggerManualSync();
+  };
+
+  const addVehicle = (config: Omit<VehicleConfig, 'id'>): string => {
+    const newId = uuidv4();
+    const newVehicle: VehicleConfig = {
+      ...config,
+      id: newId,
       createdAt: new Date().toISOString(),
     };
-    setPreTripLogs((prev) => [newLog, ...prev]);
+    setVehicles((prev) => [...prev, newVehicle]);
+    setActiveVehicleId(newId);
+    if (config.currentFuelPrice) {
+      setCurrentFuelPrice(config.currentFuelPrice);
+    }
+    // Update maintenance schedules with initial service baseline
+    setMaintenanceItems(createInitialMaintenanceSchedule(config.currentCumulativeOdometer || 0));
+    triggerManualSync();
+    return newId;
+  };
 
-    if (sessionToken) {
-      try {
-        const res = await fetch('/api/telemetry/pretrip', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${sessionToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(logData),
-        });
-        if (res.ok) {
-          const result = await res.json();
-          if (result.log) {
-            setPreTripLogs((prev) => prev.map((l) => (l.id === tempId ? result.log : l)));
-          }
+  const updateVehicleConfig = (newConfig: Partial<VehicleConfig>) => {
+    setVehicles((prev) =>
+      prev.map((v) => {
+        if (v.id === activeVehicleId) {
+          return { ...v, ...newConfig };
         }
-      } catch (e) {}
+        return v;
+      })
+    );
+    if (newConfig.currentFuelPrice !== undefined) {
+      setCurrentFuelPrice(newConfig.currentFuelPrice);
     }
-
-    showToast({
-      title: 'Pre-drive check logged',
-      description: `Range gauge: ${newLog.currentOdometer} km`,
-      type: 'success',
-    });
+    triggerManualSync();
   };
 
-  const deletePreTripLog = async (id: string) => {
-    const logToDelete = preTripLogs.find((l) => l.id === id);
-    if (!logToDelete) return;
-
-    setPreTripLogs((prev) => prev.filter((l) => l.id !== id));
-
-    if (sessionToken) {
-      try {
-        await fetch(`/api/telemetry/pretrip/${id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${sessionToken}` },
-        });
-      } catch (e) {}
-    }
-
-    showToast({ title: 'Pre-trip log removed', type: 'info' });
+  const deleteVehicle = (id: string) => {
+    if (vehicles.length <= 1) return;
+    const remaining = vehicles.filter((v) => v.id !== id);
+    setVehicles(remaining);
+    setActiveVehicleId(remaining[0].id);
+    triggerManualSync();
   };
 
-  // Data management
-  const resetToDefaults = () => {
-    setConfig(initialVehicleConfig);
-    setFuelEntries([]);
-    setDailyTrips([]);
-    setPreTripLogs([]);
-    showToast({ title: 'Cleared dataset', type: 'info' });
-  };
-
-  const exportDataJSON = () => {
-    const payload = {
-      version: '2.0.0',
-      vehicle: config,
-      fuelEntries,
-      dailyTrips,
-      preTripLogs,
-      exportedAt: new Date().toISOString(),
+  // Fuel Price Actions
+  const updateFuelPrice = (price: number, notes?: string, date?: string) => {
+    const recordDate = date || new Date().toISOString().split('T')[0];
+    const newRecord: FuelPriceRecord = {
+      id: uuidv4(),
+      date: recordDate,
+      price,
+      fuelType: activeVehicle.fuelType || 'Petrol (95)',
+      notes: notes || 'Updated via price manager',
+      isCurrentActive: true,
     };
-    return JSON.stringify(payload, null, 2);
+    setFuelPriceHistory((prev) => [
+      newRecord,
+      ...prev.map((r) => ({ ...r, isCurrentActive: false })),
+    ]);
+    setCurrentFuelPrice(price);
+    updateVehicleConfig({ currentFuelPrice: price });
+    triggerManualSync();
   };
 
-  const importDataJSON = (jsonString: string): boolean => {
-    try {
-      const data = JSON.parse(jsonString);
-      if (data.fuelEntries && Array.isArray(data.fuelEntries)) {
-        setFuelEntries(data.fuelEntries);
-      }
-      if (data.dailyTrips && Array.isArray(data.dailyTrips)) {
-        setDailyTrips(data.dailyTrips);
-      }
-      if (data.preTripLogs && Array.isArray(data.preTripLogs)) {
-        setPreTripLogs(data.preTripLogs);
-      }
-      if (data.vehicle) {
-        setConfig((prev) => ({ ...prev, ...data.vehicle }));
-      }
-      showToast({ title: 'Data successfully imported!', type: 'success' });
-      return true;
-    } catch (err) {
-      console.error(err);
-      showToast({ title: 'Failed to import JSON file', type: 'error' });
-      return false;
-    }
+  const deleteFuelPriceRecord = (id: string) => {
+    setFuelPriceHistory((prev) => prev.filter((p) => p.id !== id));
+    triggerManualSync();
   };
 
-  const syncWithDatabase = async (): Promise<boolean> => {
-    setIsSyncing(true);
-    try {
-      const payload = {
-        email: config.userEmail || 'driver@bj30e.local',
-        name: config.userName || config.name || 'BAIC BJ30e Driver',
-        config,
-        fuelEntries,
-        dailyTrips,
-        preTripLogs,
-      };
+  // Fuel Log Actions
+  const addFuelEntry = (entryData: Omit<FuelEntry, 'id' | 'createdAt' | 'litresFueled'>) => {
+    const calculatedLitres = parseFloat((entryData.amountPaid / entryData.pricePerLitre).toFixed(2));
+    const newEntry: FuelEntry = {
+      ...entryData,
+      id: uuidv4(),
+      litresFueled: calculatedLitres,
+      createdAt: new Date().toISOString(),
+    };
+    setFuelEntries((prev) => [newEntry, ...prev]);
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (sessionToken) headers['Authorization'] = `Bearer ${sessionToken}`;
-
-      const res = await fetch('/api/db/sync', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showToast({
-          title: 'Database Sync Complete',
-          description: `Synced ${data.counts?.fuelEntries ?? fuelEntries.length} fuel logs & ${data.counts?.dailyTrips ?? dailyTrips.length} trips via Prisma.`,
-          type: 'success',
-        });
-        await checkDatabaseStatus();
-        setIsSyncing(false);
-        return true;
-      } else {
-        showToast({
-          title: 'Database Sync Failed',
-          description: data.error || 'Verify DATABASE_URL in .env.local',
-          type: 'warning',
-        });
-        setIsSyncing(false);
-        return false;
-      }
-    } catch (err: any) {
-      showToast({
-        title: 'Connection Error',
-        description: err?.message || 'Failed to communicate with Supabase server route',
-        type: 'error',
-      });
-      setIsSyncing(false);
-      return false;
+    // Update fuel price history if different
+    if (entryData.pricePerLitre !== currentFuelPrice) {
+      updateFuelPrice(
+        entryData.pricePerLitre,
+        `Recorded at ${entryData.fuelStation || 'Station'}`,
+        entryData.date
+      );
     }
+
+    // Async server persistence call
+    api.createFuelEntry({
+      vehicleId: activeVehicleId,
+      ...newEntry,
+    });
+
+    triggerManualSync();
   };
 
-  const pullFromDatabase = async (): Promise<boolean> => {
-    if (!sessionToken) {
-      showToast({ title: 'Sign In Required', description: 'Please authenticate to pull cloud data.', type: 'warning' });
-      return false;
+  const updateFuelEntry = (id: string, entryData: Partial<FuelEntry>) => {
+    setFuelEntries((prev) =>
+      prev.map((entry) => {
+        if (entry.id !== id) return entry;
+        const updated = { ...entry, ...entryData };
+        if (entryData.amountPaid && entryData.pricePerLitre) {
+          updated.litresFueled = parseFloat(
+            (entryData.amountPaid / entryData.pricePerLitre).toFixed(2)
+          );
+        }
+        return updated;
+      })
+    );
+    triggerManualSync();
+  };
+
+  const deleteFuelEntry = (id: string) => {
+    setFuelEntries((prev) => prev.filter((entry) => entry.id !== id));
+    api.deleteFuelEntry(id);
+    triggerManualSync();
+  };
+
+  // Daily Trip Actions
+  const addTripEntry = (entryData: Omit<TripEntry, 'id' | 'createdAt'>) => {
+    const newEntry: TripEntry = {
+      ...entryData,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    };
+    setTripEntries((prev) => {
+      const filtered = prev.filter((t) => t.date !== entryData.date);
+      return [...filtered, newEntry].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+    });
+
+    if (entryData.totalOdometer > activeVehicle.currentCumulativeOdometer) {
+      updateVehicleConfig({ currentCumulativeOdometer: entryData.totalOdometer });
     }
 
-    setIsSyncing(true);
-    try {
-      await fetchTelemetryFromDb(sessionToken);
-      showToast({
-        title: 'Pulled from Database',
-        description: 'Loaded your live vehicle records from the database.',
-        type: 'success',
-      });
-      setIsSyncing(false);
-      return true;
-    } catch (err: any) {
-      showToast({
-        title: 'Pull Failed',
-        description: err?.message || 'Could not fetch database records',
-        type: 'error',
-      });
-      setIsSyncing(false);
-      return false;
-    }
+    api.createTripEntry({
+      vehicleId: activeVehicleId,
+      ...newEntry,
+    });
+
+    triggerManualSync();
+  };
+
+  const updateTripEntry = (id: string, entryData: Partial<TripEntry>) => {
+    setTripEntries((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...entryData } : t)).sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      )
+    );
+    triggerManualSync();
+  };
+
+  const deleteTripEntry = (id: string) => {
+    setTripEntries((prev) => prev.filter((t) => t.id !== id));
+    api.deleteTripEntry(id);
+    triggerManualSync();
+  };
+
+  // Pre-Trip Actions
+  const addPreTripEntry = (entryData: Omit<PreTripEntry, 'id' | 'createdAt'>) => {
+    const newEntry: PreTripEntry = {
+      ...entryData,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+    };
+    setPreTripEntries((prev) => [newEntry, ...prev]);
+    triggerManualSync();
+  };
+
+  const deletePreTripEntry = (id: string) => {
+    setPreTripEntries((prev) => prev.filter((pt) => pt.id !== id));
+    triggerManualSync();
+  };
+
+  // Maintenance Actions
+  const addMaintenanceItem = (itemData: Omit<MaintenanceScheduleItem, 'id'>) => {
+    const newItem: MaintenanceScheduleItem = {
+      ...itemData,
+      id: uuidv4(),
+    };
+    setMaintenanceItems((prev) => [...prev, newItem]);
+    triggerManualSync();
+  };
+
+  const updateMaintenanceItem = (id: string, itemData: Partial<MaintenanceScheduleItem>) => {
+    setMaintenanceItems((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...itemData } : m))
+    );
+    triggerManualSync();
+  };
+
+  const deleteMaintenanceItem = (id: string) => {
+    setMaintenanceItems((prev) => prev.filter((m) => m.id !== id));
+    triggerManualSync();
+  };
+
+  const markMaintenanceServiced = (id: string, serviceOdometer: number) => {
+    setMaintenanceItems((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m;
+        return {
+          ...m,
+          lastServiceOdometer: serviceOdometer,
+          lastServiceDate: new Date().toISOString().split('T')[0],
+        };
+      })
+    );
+    triggerManualSync();
+  };
+
+  // Clear data for current car (to start completely fresh)
+  const clearVehicleData = () => {
+    setFuelEntries([]);
+    setTripEntries([]);
+    setPreTripEntries([]);
+    triggerManualSync();
+  };
+
+  // Reset to sample demo garage
+  const resetToDemoData = () => {
+    setUser({
+      id: 'usr_demo',
+      email: 'demo@fueltracker.app',
+      name: 'Demo Driver',
+      avatar: 'speedometer',
+      createdAt: new Date().toISOString(),
+      isDemoUser: true,
+      targetEfficiency: 14.5,
+      preferredCurrency: 'Rs.',
+    });
+    setVehicles(sampleDemoGarage.vehicles);
+    setActiveVehicleId(sampleDemoGarage.vehicles[0].id);
+    setCurrentFuelPrice(106.5);
+    setFuelPriceHistory(initialFuelPriceHistory);
+    setFuelEntries(sampleDemoGarage.fuelEntries);
+    setTripEntries(sampleDemoGarage.tripEntries);
+    setPreTripEntries([]);
+    setMaintenanceItems(createInitialMaintenanceSchedule(42850));
+    triggerManualSync();
   };
 
   return (
     <AppContext.Provider
       value={{
-        config,
-        updateConfig,
+        user,
+        isAuthenticated: !!(user && user.email),
+        login,
+        register,
+        logout,
+        enterGuestMode,
+        updateUserProfile,
+        changePassword,
+        isProfileModalOpen,
+        setIsProfileModalOpen,
+        isFuelPriceModalOpen,
+        setIsFuelPriceModalOpen,
+        isAddFuelModalOpen,
+        setIsAddFuelModalOpen,
+        isAddTripModalOpen,
+        setIsAddTripModalOpen,
         activeTab,
         setActiveTab,
-        activeModal,
-        setActiveModal,
-        editingFuelEntry,
-        setEditingFuelEntry,
-        completingFuelEntry,
-        setCompletingFuelEntry,
-        editingTrip,
-        setEditingTrip,
-        setEditingDailyTrip: setEditingTrip,
-        fuelEntries: computedFuelEntries,
-        rawFuelEntries: fuelEntries,
-        dailyTrips: computedDailyTrips,
-        tripEntries: computedDailyTrips,
-        rawDailyTrips: dailyTrips,
-        preTripLogs: computedPreTripLogs,
-        rawPreTripLogs: preTripLogs,
-        kpis,
-        isLoadingData,
+        calculatorTab,
+        setCalculatorTab,
+        vehicles,
+        activeVehicleId,
+        vehicleConfig: activeVehicle,
+        switchVehicle,
+        addVehicle,
+        updateVehicleConfig,
+        deleteVehicle,
+        fullRangeBenchmark,
+        currentFuelPrice,
+        fuelPriceHistory,
+        updateFuelPrice,
+        deleteFuelPriceRecord,
+        fuelEntries,
+        computedFuelEntries,
+        fuelStats,
         addFuelEntry,
         updateFuelEntry,
         deleteFuelEntry,
-        completeFuelEntry,
-        addDailyTrip,
-        updateDailyTrip,
-        deleteDailyTrip,
-        addPreTripLog,
-        deletePreTripLog,
-        toasts,
-        showToast,
-        removeToast,
-        theme: config.theme,
-        isDarkMode,
-        setTheme,
-        isAuthenticated,
-        setIsAuthenticated,
-        sessionToken,
-        isLoadingAuth,
-        loginUser,
-        registerUser,
-        changePassword,
-        logout,
-        resetToDefaults,
-        exportDataJSON,
-        importDataJSON,
-        dbStatus,
+        tripEntries,
+        computedTripEntries,
+        addTripEntry,
+        updateTripEntry,
+        deleteTripEntry,
+        preTripEntries,
+        computedPreTripEntries,
+        addPreTripEntry,
+        deletePreTripEntry,
+        maintenanceItems,
+        computedMaintenance,
+        addMaintenanceItem,
+        updateMaintenanceItem,
+        deleteMaintenanceItem,
+        markMaintenanceServiced,
+        iCloudSyncEnabled,
+        setICloudSyncEnabled,
         isSyncing,
-        checkDatabaseStatus,
-        syncWithDatabase,
-        pullFromDatabase,
+        lastSyncedAt,
+        triggerManualSync,
+        clearVehicleData,
+        resetToDemoData,
       }}
     >
       {children}

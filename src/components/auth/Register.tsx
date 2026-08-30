@@ -178,6 +178,14 @@ export const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onBackToLan
         }),
       });
 
+      // Check if response is JSON before parsing
+      const contentType = registerResponse.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        setError('Server returned non-JSON response. This might be a deployment issue.');
+        setIsLoading(false);
+        return;
+      }
+
       if (!registerResponse.ok) {
         const errorData = await registerResponse.json();
         setError(errorData.error || 'Registration failed. Please try again.');

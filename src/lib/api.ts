@@ -40,6 +40,14 @@ export const api = {
       const res = await fetch('/api/vehicles', {
         headers: getAuthHeaders(),
       });
+      
+      // Check if response is JSON before parsing
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API getVehicles: Non-JSON response received');
+        return [];
+      }
+      
       if (res.ok) {
         const data = await res.json();
         return data.vehicles || [];
@@ -57,6 +65,13 @@ export const api = {
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API createVehicle: Non-JSON response received');
+        return null;
+      }
+      
       if (res.ok) {
         const data = await res.json();
         return data.vehicle;
@@ -74,6 +89,13 @@ export const api = {
       const res = await fetch(url, {
         headers: getAuthHeaders(),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API getFuelEntries: Non-JSON response received');
+        return [];
+      }
+      
       if (res.ok) {
         const data = await res.json();
         return data.entries || [];
@@ -91,6 +113,13 @@ export const api = {
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API createFuelEntry: Non-JSON response received');
+        return null;
+      }
+      
       if (res.ok) {
         const data = await res.json();
         return data.entry;
@@ -107,6 +136,13 @@ export const api = {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API deleteFuelEntry: Non-JSON response received');
+        return false;
+      }
+      
       return res.ok;
     } catch (e) {
       console.warn('API deleteFuelEntry fallback:', e);
@@ -121,6 +157,13 @@ export const api = {
       const res = await fetch(url, {
         headers: getAuthHeaders(),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API getTripEntries: Non-JSON response received');
+        return [];
+      }
+      
       if (res.ok) {
         const data = await res.json();
         return data.trips || [];
@@ -138,6 +181,13 @@ export const api = {
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API createTripEntry: Non-JSON response received');
+        return null;
+      }
+      
       if (res.ok) {
         const data = await res.json();
         return data.trip;
@@ -154,6 +204,13 @@ export const api = {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API deleteTripEntry: Non-JSON response received');
+        return false;
+      }
+      
       return res.ok;
     } catch (e) {
       console.warn('API deleteTripEntry fallback:', e);
@@ -168,6 +225,13 @@ export const api = {
       const res = await fetch(url, {
         headers: getAuthHeaders(),
       });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API getMaintenance: Non-JSON response received');
+        return [];
+      }
+      
       if (res.ok) {
         const data = await res.json();
         return data.items || [];

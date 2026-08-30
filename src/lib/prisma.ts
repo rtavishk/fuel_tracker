@@ -1,34 +1,12 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-// Lazy Prisma Client singleton with connection resilience
-declare global {
-  // eslint-disable-next-line no-var
-  var __prismaClient: PrismaClient | undefined;
-}
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-let prismaClient: PrismaClient | null = null;
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
 
-export function getPrismaClient(): PrismaClient | null {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
+export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter });
 
-  if (process.env.NODE_ENV === 'production') {
-    if (!prismaClient) {
-      prismaClient = new PrismaClient({
-        log: ['error', 'warn'],
-      });
-    }
-    return prismaClient;
-  }
-
-  // Development environment: Reuse client across HMR / reload cycles
-  if (!global.__prismaClient) {
-    global.__prismaClient = new PrismaClient({
-      log: ['error', 'warn'],
-    });
-  }
-  return global.__prismaClient;
-}
-
-export const prisma = getPrismaClient();
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

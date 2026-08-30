@@ -1,5 +1,15 @@
 {
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/fuel-entries/[id]/route": "/api/fuel-entries/[id]",
+  "/api/fuel-entries/route": "/api/fuel-entries",
+  "/api/maintenance/[id]/route": "/api/maintenance/[id]",
+  "/api/maintenance/route": "/api/maintenance",
+  "/api/trip-entries/[id]/route": "/api/trip-entries/[id]",
+  "/api/trip-entries/route": "/api/trip-entries",
+  "/api/vehicles/[id]/route": "/api/vehicles/[id]",
+  "/api/vehicles/route": "/api/vehicles",
   "/page": "/"
 }

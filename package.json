@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "prisma generate && tsx server.ts",
-    "build": "prisma generate && next build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
+    "dev:next": "prisma generate && next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
     "preview": "next start",
     "clean": "rm -rf dist server.js",
     "db:generate": "prisma generate",

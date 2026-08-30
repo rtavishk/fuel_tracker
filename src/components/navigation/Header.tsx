@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Plus,
   Car,
+  LogOut,
 } from 'lucide-react';
 import { AddVehicleModal } from '../garage/AddVehicleModal';
 import { UserAvatar } from '../common/UserAvatar';
@@ -27,6 +28,7 @@ export const Header: React.FC = () => {
     user,
     setIsProfileModalOpen,
     setIsFuelPriceModalOpen,
+    logout,
   } = useApp();
 
   const [isVehicleMenuOpen, setIsVehicleMenuOpen] = useState(false);
@@ -62,7 +64,7 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 bg-[#09090b]/90 backdrop-blur-xl border-b border-zinc-800/80 max-w-full overflow-x-hidden">
+      <header className="sticky top-0 z-[100] flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 bg-[#09090b]/90 backdrop-blur-xl border-b border-zinc-800/80 max-w-full overflow-x-hidden">
         {/* Left: Module title & active vehicle switcher */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-emerald-400 via-teal-400 to-emerald-500 text-black font-bold shadow-md shadow-emerald-500/20 shrink-0">
@@ -91,7 +93,7 @@ export const Header: React.FC = () => {
 
                 {/* Dropdown Menu */}
                 {isVehicleMenuOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 w-64 rounded-xl bg-[#121215] border border-zinc-800 shadow-2xl p-1.5 z-50 space-y-1 backdrop-blur-2xl">
+                  <div className="absolute left-0 top-full mt-1.5 w-64 rounded-xl bg-[#121215] border border-zinc-800 shadow-2xl p-1.5 z-[9999] space-y-1 backdrop-blur-2xl">
                     <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400/90 font-mono">
                       Garage Vehicles
                     </div>
@@ -193,28 +195,40 @@ export const Header: React.FC = () => {
 
           {/* User Profile Avatar Trigger */}
           {user && (
-            <button
-              type="button"
-              id="header-profile-btn"
-              onClick={() => setIsProfileModalOpen(true)}
-              title="Driver Profile & Settings (Change Password & Avatar)"
-              className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-[#121215] border border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-500/10 text-zinc-200 transition-all cursor-pointer shadow-sm shadow-black/40"
-            >
-              <UserAvatar
-                user={user}
-                size="sm"
-                showStatus={true}
-                isOnline={true}
-              />
-              <div className="hidden md:flex flex-col text-left">
-                <span className="text-xs font-semibold text-white max-w-[110px] truncate leading-tight">
-                  {user.name}
-                </span>
-                <span className="text-[9.5px] font-mono text-emerald-400 leading-tight">
-                  v{APP_VERSION} • {user.driverTier || 'Driver'}
-                </span>
-              </div>
-            </button>
+            <>
+              <button
+                type="button"
+                id="header-profile-btn"
+                onClick={() => setIsProfileModalOpen(true)}
+                title="Driver Profile & Settings (Change Password & Avatar)"
+                className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-[#121215] border border-zinc-800 hover:border-emerald-500/40 hover:bg-emerald-500/10 text-zinc-200 transition-all cursor-pointer shadow-sm shadow-black/40"
+              >
+                <UserAvatar
+                  user={user}
+                  size="sm"
+                  showStatus={true}
+                  isOnline={true}
+                />
+                <div className="hidden md:flex flex-col text-left">
+                  <span className="text-xs font-semibold text-white max-w-[110px] truncate leading-tight">
+                    {user.name}
+                  </span>
+                  <span className="text-[9.5px] font-mono text-emerald-400 leading-tight">
+                    v{APP_VERSION} • {user.driverTier || 'Driver'}
+                  </span>
+                </div>
+              </button>
+
+              {/* Mobile Logout Button */}
+              <button
+                type="button"
+                onClick={logout}
+                title="Sign Out"
+                className="sm:hidden p-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:bg-rose-500/25 transition-all cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
           )}
         </div>
       </header>

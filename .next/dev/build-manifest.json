@@ -3,54 +3,13 @@
     "/_app": []
   },
   "devFiles": [],
-  "polyfillFiles": [
-    "static/chunks/0k5l_next_dist_build_polyfills_polyfill-nomodule.js"
-  ],
+  "polyfillFiles": [],
   "lowPriorityFiles": [
     "static/development/_buildManifest.js",
     "static/development/_ssgManifest.js",
     "static/development/_clientMiddlewareManifest.js"
   ],
-  "rootMainFiles": [
-    "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_0c-k4h6._.js",
-    "static/chunks/0k5l_next_dist_compiled_next-devtools_index_0_up679.js",
-    "static/chunks/0k5l_next_dist_compiled_react-dom_01m00g9._.js",
-    "static/chunks/0k5l_next_dist_compiled_react-server-dom-turbopack_0ykr466._.js",
-    "static/chunks/0k5l_next_dist_compiled_0djrkpg._.js",
-    "static/chunks/0k5l_next_dist_client_0s8q5ha._.js",
-    "static/chunks/0k5l_next_dist_1mrrod2._.js",
-    "static/chunks/0zix_@swc_helpers_cjs_0hi-e47._.js",
-    "static/chunks/_1anvha4._.js",
-    "static/chunks/turbopack-_15lbl2f._.js"
-  ],
-  "rootMainFilesTree": {
-    "/_not-found/page": [
-      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_0c-k4h6._.js",
-      "static/chunks/0k5l_next_dist_compiled_next-devtools_index_0_up679.js",
-      "static/chunks/0k5l_next_dist_compiled_react-dom_01m00g9._.js",
-      "static/chunks/0k5l_next_dist_compiled_react-server-dom-turbopack_0ykr466._.js",
-      "static/chunks/0k5l_next_dist_compiled_0djrkpg._.js",
-      "static/chunks/0k5l_next_dist_client_0s8q5ha._.js",
-      "static/chunks/0k5l_next_dist_1mrrod2._.js",
-      "static/chunks/0zix_@swc_helpers_cjs_0hi-e47._.js",
-      "static/chunks/_1anvha4._.js",
-      "static/chunks/turbopack-_15lbl2f._.js",
-      "static/chunks/_18x7jxu._.js"
-    ],
-    "/page": [
-      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_0c-k4h6._.js",
-      "static/chunks/0k5l_next_dist_compiled_next-devtools_index_0_up679.js",
-      "static/chunks/0k5l_next_dist_compiled_react-dom_01m00g9._.js",
-      "static/chunks/0k5l_next_dist_compiled_react-server-dom-turbopack_0ykr466._.js",
-      "static/chunks/0k5l_next_dist_compiled_0djrkpg._.js",
-      "static/chunks/0k5l_next_dist_client_0s8q5ha._.js",
-      "static/chunks/0k5l_next_dist_1mrrod2._.js",
-      "static/chunks/0zix_@swc_helpers_cjs_0hi-e47._.js",
-      "static/chunks/_1anvha4._.js",
-      "static/chunks/turbopack-_15lbl2f._.js",
-      "static/chunks/_219uq1s._.js"
-    ]
-  },
-  "pagesChunkGroupBootstrapParams": {},
-  "chunkLoadingGlobal": "TURBOPACK"
+  "rootMainFiles": [],
+  "rootMainFilesTree": {},
+  "pagesChunkGroupBootstrapParams": {}
 }

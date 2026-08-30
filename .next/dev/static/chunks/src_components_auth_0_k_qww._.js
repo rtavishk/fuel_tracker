@@ -59,7 +59,13 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
             return;
         }
         if (!password || password.length < 6) {
-            setError('Please enter your password (minimum 6 characters).');
+            setError('Password must be at least 6 characters.');
+            return;
+        }
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setError('Please enter a valid email address.');
             return;
         }
         setIsLoading(true);
@@ -75,6 +81,32 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                     password
                 })
             });
+            // Check if response is JSON before parsing
+            const contentType = response.headers.get('content-type');
+            console.log('Login response status:', response.status, 'content-type:', contentType);
+            if (!contentType || !contentType.includes('application/json')) {
+                // Get response text for debugging
+                const text = await response.text();
+                console.error('Non-JSON response from login API:', text.substring(0, 200));
+                // Fallback to local auth if API is unavailable
+                console.warn('API unavailable, using local authentication fallback');
+                if (rememberMe) {
+                    localStorage.setItem('fuel_tracker_saved_email', email.trim());
+                } else {
+                    localStorage.removeItem('fuel_tracker_saved_email');
+                }
+                const userName = email.split('@')[0];
+                const loginSuccess = await login(email.trim(), userName);
+                if (!loginSuccess) {
+                    setError('Local authentication failed. Please try again.');
+                    setIsLoading(false);
+                    return;
+                }
+                setError('Login successful (API unavailable - using local mode)');
+                setTimeout(()=>setError(''), 3000);
+                setIsLoading(false);
+                return;
+            }
             if (response.ok) {
                 const data = await response.json();
                 if (rememberMe) {
@@ -147,14 +179,14 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                 className: "absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"
             }, void 0, false, {
                 fileName: "[project]/src/components/auth/Login.tsx",
-                lineNumber: 143,
+                lineNumber: 182,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "absolute bottom-1/4 right-1/4 w-80 h-80 bg-teal-500/5 rounded-full blur-3xl pointer-events-none"
             }, void 0, false, {
                 fileName: "[project]/src/components/auth/Login.tsx",
-                lineNumber: 144,
+                lineNumber: 183,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$motion$40$12$2e$43$2e$0_react$2d$dom$40$19$2e$2$2e$8_react$40$19$2e$2$2e$8_$5f$react$40$19$2e$2$2e$8$2f$node_modules$2f$motion$2f$dist$2f$es$2f$react$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["motion"].div, {
@@ -181,20 +213,20 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                 className: "w-3.5 h-3.5"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 158,
+                                lineNumber: 197,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 children: "Back to Landing"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 159,
+                                lineNumber: 198,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Login.tsx",
-                        lineNumber: 153,
+                        lineNumber: 192,
                         columnNumber: 11
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -206,12 +238,12 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                     className: "w-8 h-8 stroke-[2.5]"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                    lineNumber: 166,
+                                    lineNumber: 205,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 165,
+                                lineNumber: 204,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -219,7 +251,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                 children: "Fuel Pulse Telemetry"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 168,
+                                lineNumber: 207,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -227,13 +259,13 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                 children: "Vehicle mileage telemetry, fuel tracking & database sync"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 171,
+                                lineNumber: 210,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Login.tsx",
-                        lineNumber: 164,
+                        lineNumber: 203,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -268,7 +300,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                             children: "Sign In"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 188,
+                                                            lineNumber: 227,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -276,13 +308,13 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                             children: "Access your personal vehicle database"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 189,
+                                                            lineNumber: 228,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 187,
+                                                    lineNumber: 226,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -292,26 +324,26 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                             className: "w-3 h-3 text-emerald-400"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 194,
+                                                            lineNumber: 233,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                             children: supabaseReady ? 'Supabase Live' : 'Database SSL'
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 195,
+                                                            lineNumber: 234,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 193,
+                                                    lineNumber: 232,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 186,
+                                            lineNumber: 225,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -321,20 +353,20 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                     className: "w-4 h-4 shrink-0 mt-0.5 text-rose-400"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 201,
+                                                    lineNumber: 240,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: error
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 202,
+                                                    lineNumber: 241,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 200,
+                                            lineNumber: 239,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         successMessage && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -344,20 +376,20 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                     className: "w-4 h-4 shrink-0 text-emerald-400"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 208,
+                                                    lineNumber: 247,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: successMessage
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 209,
+                                                    lineNumber: 248,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 207,
+                                            lineNumber: 246,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -371,7 +403,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                             children: "Email Address"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 215,
+                                                            lineNumber: 254,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -381,7 +413,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     className: "w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 219,
+                                                                    lineNumber: 258,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -394,19 +426,19 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     className: "w-full pl-10 pr-4 py-2.5 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 220,
+                                                                    lineNumber: 259,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0))
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 218,
+                                                            lineNumber: 257,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 214,
+                                                    lineNumber: 253,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -419,7 +451,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     children: "Password"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 234,
+                                                                    lineNumber: 273,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -432,13 +464,13 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     children: "Forgot password?"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 235,
+                                                                    lineNumber: 274,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0))
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 233,
+                                                            lineNumber: 272,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -448,7 +480,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     className: "w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 247,
+                                                                    lineNumber: 286,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -461,7 +493,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     className: "w-full pl-10 pr-10 py-2.5 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 248,
+                                                                    lineNumber: 287,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -472,30 +504,30 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                         className: "w-4 h-4"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                                                        lineNumber: 262,
+                                                                        lineNumber: 301,
                                                                         columnNumber: 41
                                                                     }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$546$2e$0_react$40$19$2e$2$2e$8$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$eye$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Eye$3e$__["Eye"], {
                                                                         className: "w-4 h-4"
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                                                        lineNumber: 262,
+                                                                        lineNumber: 301,
                                                                         columnNumber: 74
                                                                     }, ("TURBOPACK compile-time value", void 0))
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 257,
+                                                                    lineNumber: 296,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0))
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 246,
+                                                            lineNumber: 285,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 232,
+                                                    lineNumber: 271,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -510,7 +542,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                 className: "w-4 h-4 rounded border-zinc-700 bg-[#09090b] text-emerald-500 focus:ring-emerald-500/20 accent-emerald-400"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                                                lineNumber: 269,
+                                                                lineNumber: 308,
                                                                 columnNumber: 23
                                                             }, ("TURBOPACK compile-time value", void 0)),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -518,18 +550,18 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                 children: "Remember session"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                                                lineNumber: 275,
+                                                                lineNumber: 314,
                                                                 columnNumber: 23
                                                             }, ("TURBOPACK compile-time value", void 0))
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                                        lineNumber: 268,
+                                                        lineNumber: 307,
                                                         columnNumber: 21
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 267,
+                                                    lineNumber: 306,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -540,7 +572,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                         className: "w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                                        lineNumber: 285,
+                                                        lineNumber: 324,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                                                         children: [
@@ -548,37 +580,37 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                 children: "Sign In to Garage"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                                                lineNumber: 288,
+                                                                lineNumber: 327,
                                                                 columnNumber: 25
                                                             }, ("TURBOPACK compile-time value", void 0)),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$546$2e$0_react$40$19$2e$2$2e$8$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$right$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowRight$3e$__["ArrowRight"], {
                                                                 className: "w-4 h-4"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                                                lineNumber: 289,
+                                                                lineNumber: 328,
                                                                 columnNumber: 25
                                                             }, ("TURBOPACK compile-time value", void 0))
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                                        lineNumber: 287,
+                                                        lineNumber: 326,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 279,
+                                                    lineNumber: 318,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 213,
+                                            lineNumber: 252,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, "login-form", true, {
                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                    lineNumber: 179,
+                                    lineNumber: 218,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$motion$40$12$2e$43$2e$0_react$2d$dom$40$19$2e$2$2e$8_react$40$19$2e$2$2e$8_$5f$react$40$19$2e$2$2e$8$2f$node_modules$2f$motion$2f$dist$2f$es$2f$react$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["motion"].div, {
                                     initial: {
@@ -606,12 +638,12 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                         className: "w-5 h-5"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                                        lineNumber: 305,
+                                                        lineNumber: 344,
                                                         columnNumber: 21
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 304,
+                                                    lineNumber: 343,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h2", {
@@ -619,7 +651,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                     children: "Reset Password"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 307,
+                                                    lineNumber: 346,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -627,13 +659,13 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                     children: "Enter your email to receive recovery instructions"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 308,
+                                                    lineNumber: 347,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 303,
+                                            lineNumber: 342,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -643,20 +675,20 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                     className: "w-4 h-4 shrink-0 text-rose-400"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 315,
+                                                    lineNumber: 354,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                     children: error
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 316,
+                                                    lineNumber: 355,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 314,
+                                            lineNumber: 353,
                                             columnNumber: 19
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -670,7 +702,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                             children: "Account Email"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 322,
+                                                            lineNumber: 361,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -680,7 +712,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     className: "w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 326,
+                                                                    lineNumber: 365,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -692,19 +724,19 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                     className: "w-full pl-10 pr-4 py-2.5 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                                    lineNumber: 327,
+                                                                    lineNumber: 366,
                                                                     columnNumber: 23
                                                                 }, ("TURBOPACK compile-time value", void 0))
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 325,
+                                                            lineNumber: 364,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 321,
+                                                    lineNumber: 360,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -720,7 +752,7 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                             children: "Back to Sign In"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 339,
+                                                            lineNumber: 378,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -731,35 +763,35 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                                                 className: "w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                                                lineNumber: 355,
+                                                                lineNumber: 394,
                                                                 columnNumber: 25
                                                             }, ("TURBOPACK compile-time value", void 0)) : 'Send Recovery'
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                                            lineNumber: 349,
+                                                            lineNumber: 388,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                                    lineNumber: 338,
+                                                    lineNumber: 377,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 320,
+                                            lineNumber: 359,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, "forgot-form", true, {
                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                    lineNumber: 296,
+                                    lineNumber: 335,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 177,
+                                lineNumber: 216,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -775,24 +807,24 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                             children: "Create new vehicle profile"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/auth/Login.tsx",
-                                            lineNumber: 369,
+                                            lineNumber: 408,
                                             columnNumber: 15
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/auth/Login.tsx",
-                                    lineNumber: 367,
+                                    lineNumber: 406,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 366,
+                                lineNumber: 405,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Login.tsx",
-                        lineNumber: 176,
+                        lineNumber: 215,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -805,14 +837,14 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                         className: "w-3.5 h-3.5 text-emerald-400"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                        lineNumber: 382,
+                                        lineNumber: 421,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     "Supabase Auth & TLS"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 381,
+                                lineNumber: 420,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -822,32 +854,32 @@ const Login = ({ onSwitchToRegister, onBackToLanding })=>{
                                         className: "w-3.5 h-3.5 text-emerald-400"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Login.tsx",
-                                        lineNumber: 386,
+                                        lineNumber: 425,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     "Encrypted Database"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/auth/Login.tsx",
-                                lineNumber: 385,
+                                lineNumber: 424,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Login.tsx",
-                        lineNumber: 380,
+                        lineNumber: 419,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/auth/Login.tsx",
-                lineNumber: 146,
+                lineNumber: 185,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/auth/Login.tsx",
-        lineNumber: 141,
+        lineNumber: 180,
         columnNumber: 5
     }, ("TURBOPACK compile-time value", void 0));
 };
@@ -1062,6 +1094,16 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                     }
                 })
             });
+            // Check if response is JSON before parsing
+            const contentType = registerResponse.headers.get('content-type');
+            console.log('Register response status:', registerResponse.status, 'content-type:', contentType);
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await registerResponse.text();
+                console.error('Non-JSON response from register API:', text.substring(0, 200));
+                setError('Server returned non-JSON response. This might be a deployment issue.');
+                setIsLoading(false);
+                return;
+            }
             if (!registerResponse.ok) {
                 const errorData = await registerResponse.json();
                 setError(errorData.error || 'Registration failed. Please try again.');
@@ -1133,14 +1175,14 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                 className: "absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"
             }, void 0, false, {
                 fileName: "[project]/src/components/auth/Register.tsx",
-                lineNumber: 255,
+                lineNumber: 267,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "absolute bottom-1/4 right-1/4 w-80 h-80 bg-teal-500/5 rounded-full blur-3xl pointer-events-none"
             }, void 0, false, {
                 fileName: "[project]/src/components/auth/Register.tsx",
-                lineNumber: 256,
+                lineNumber: 268,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0)),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$motion$40$12$2e$43$2e$0_react$2d$dom$40$19$2e$2$2e$8_react$40$19$2e$2$2e$8_$5f$react$40$19$2e$2$2e$8$2f$node_modules$2f$motion$2f$dist$2f$es$2f$react$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["motion"].div, {
@@ -1167,20 +1209,20 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                 className: "w-3.5 h-3.5"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 270,
+                                lineNumber: 282,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 children: "Back to Landing"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 271,
+                                lineNumber: 283,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Register.tsx",
-                        lineNumber: 265,
+                        lineNumber: 277,
                         columnNumber: 11
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1192,12 +1234,12 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                     className: "w-7 h-7 stroke-[2.5]"
                                 }, void 0, false, {
                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                    lineNumber: 278,
+                                    lineNumber: 290,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 277,
+                                lineNumber: 289,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -1205,7 +1247,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                 children: "Create Driver Account"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 280,
+                                lineNumber: 292,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1213,13 +1255,13 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                 children: "Setup your personal vehicle profile with automated mileage & gas analytics"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 283,
+                                lineNumber: 295,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Register.tsx",
-                        lineNumber: 276,
+                        lineNumber: 288,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1233,27 +1275,27 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                         children: "1"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                        lineNumber: 297,
+                                        lineNumber: 309,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "Driver Profile"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                        lineNumber: 300,
+                                        lineNumber: 312,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 290,
+                                lineNumber: 302,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "w-8 h-px bg-zinc-800"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 302,
+                                lineNumber: 314,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1264,26 +1306,26 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                         children: "2"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                        lineNumber: 310,
+                                        lineNumber: 322,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: "Garage Setup"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                        lineNumber: 313,
+                                        lineNumber: 325,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 303,
+                                lineNumber: 315,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Register.tsx",
-                        lineNumber: 289,
+                        lineNumber: 301,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$Card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Card"], {
@@ -1296,20 +1338,20 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                         className: "w-4 h-4 shrink-0 mt-0.5 text-rose-400"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                        lineNumber: 320,
+                                        lineNumber: 332,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                         children: error
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                        lineNumber: 321,
+                                        lineNumber: 333,
                                         columnNumber: 15
                                     }, ("TURBOPACK compile-time value", void 0))
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 319,
+                                lineNumber: 331,
                                 columnNumber: 13
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$framer$2d$motion$40$12$2e$43$2e$0_react_7d762909e5dba7decf1657d84a729a3d$2f$node_modules$2f$framer$2d$motion$2f$dist$2f$es$2f$components$2f$AnimatePresence$2f$index$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__["AnimatePresence"], {
@@ -1337,7 +1379,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                     children: "Full Name"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 336,
+                                                    lineNumber: 348,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1347,7 +1389,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 340,
+                                                            lineNumber: 352,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1359,19 +1401,19 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full pl-10 pr-4 py-2.5 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 341,
+                                                            lineNumber: 353,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 339,
+                                                    lineNumber: 351,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 335,
+                                            lineNumber: 347,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1381,7 +1423,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                     children: "Email Address"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 353,
+                                                    lineNumber: 365,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1391,7 +1433,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 357,
+                                                            lineNumber: 369,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1403,19 +1445,19 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full pl-10 pr-4 py-2.5 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 358,
+                                                            lineNumber: 370,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 356,
+                                                    lineNumber: 368,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 352,
+                                            lineNumber: 364,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1425,7 +1467,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                     children: "Account Password"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 370,
+                                                    lineNumber: 382,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1435,7 +1477,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 374,
+                                                            lineNumber: 386,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1447,7 +1489,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full pl-10 pr-10 py-2.5 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 375,
+                                                            lineNumber: 387,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1458,24 +1500,24 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                                 className: "w-4 h-4"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                                                lineNumber: 388,
+                                                                lineNumber: 400,
                                                                 columnNumber: 39
                                                             }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$546$2e$0_react$40$19$2e$2$2e$8$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$eye$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Eye$3e$__["Eye"], {
                                                                 className: "w-4 h-4"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                                                lineNumber: 388,
+                                                                lineNumber: 400,
                                                                 columnNumber: 72
                                                             }, ("TURBOPACK compile-time value", void 0))
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 383,
+                                                            lineNumber: 395,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 373,
+                                                    lineNumber: 385,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 password && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1489,7 +1531,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                                     children: "Strength:"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                                    lineNumber: 396,
+                                                                    lineNumber: 408,
                                                                     columnNumber: 25
                                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1497,13 +1539,13 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                                     children: passwordStrength.label
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                                    lineNumber: 397,
+                                                                    lineNumber: 409,
                                                                     columnNumber: 25
                                                                 }, ("TURBOPACK compile-time value", void 0))
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 395,
+                                                            lineNumber: 407,
                                                             columnNumber: 23
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1517,24 +1559,24 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                                     className: `h-full flex-1 rounded-full transition-all duration-300 ${level <= passwordStrength.score ? passwordStrength.color : 'bg-[#09090b]'}`
                                                                 }, level, false, {
                                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                                    lineNumber: 401,
+                                                                    lineNumber: 413,
                                                                     columnNumber: 27
                                                                 }, ("TURBOPACK compile-time value", void 0)))
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 399,
+                                                            lineNumber: 411,
                                                             columnNumber: 23
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 394,
+                                                    lineNumber: 406,
                                                     columnNumber: 21
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 369,
+                                            lineNumber: 381,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1544,7 +1586,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                     children: "Confirm Password"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 414,
+                                                    lineNumber: 426,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1554,7 +1596,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-4 h-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 418,
+                                                            lineNumber: 430,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1566,19 +1608,19 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full pl-10 pr-4 py-2.5 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-colors"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 419,
+                                                            lineNumber: 431,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 417,
+                                                    lineNumber: 429,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 413,
+                                            lineNumber: 425,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -1589,26 +1631,26 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                     children: "Continue to Garage Setup"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 434,
+                                                    lineNumber: 446,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$546$2e$0_react$40$19$2e$2$2e$8$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$arrow$2d$right$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__ArrowRight$3e$__["ArrowRight"], {
                                                     className: "w-4 h-4 stroke-[2.5]"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 435,
+                                                    lineNumber: 447,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 430,
+                                            lineNumber: 442,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, "step-1", true, {
                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                    lineNumber: 327,
+                                    lineNumber: 339,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$motion$40$12$2e$43$2e$0_react$2d$dom$40$19$2e$2$2e$8_react$40$19$2e$2$2e$8_$5f$react$40$19$2e$2$2e$8$2f$node_modules$2f$motion$2f$dist$2f$es$2f$react$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["motion"].form, {
                                     initial: {
@@ -1636,7 +1678,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             children: "Make"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 449,
+                                                            lineNumber: 461,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1648,13 +1690,13 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 450,
+                                                            lineNumber: 462,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 448,
+                                                    lineNumber: 460,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1664,7 +1706,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             children: "Model"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 460,
+                                                            lineNumber: 472,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1676,19 +1718,19 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 461,
+                                                            lineNumber: 473,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 459,
+                                                    lineNumber: 471,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 447,
+                                            lineNumber: 459,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1701,7 +1743,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             children: "Year"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 474,
+                                                            lineNumber: 486,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1713,65 +1755,6 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             required: true,
                                                             className: "w-full px-2.5 sm:px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400"
                                                         }, void 0, false, {
-                                                            fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 475,
-                                                            columnNumber: 21
-                                                        }, ("TURBOPACK compile-time value", void 0))
-                                                    ]
-                                                }, void 0, true, {
-                                                    fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 473,
-                                                    columnNumber: 19
-                                                }, ("TURBOPACK compile-time value", void 0)),
-                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                    children: [
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
-                                                            className: "block text-xs font-semibold text-zinc-300 mb-1.5",
-                                                            children: "Fuel Type"
-                                                        }, void 0, false, {
-                                                            fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 486,
-                                                            columnNumber: 21
-                                                        }, ("TURBOPACK compile-time value", void 0)),
-                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
-                                                            value: fuelType,
-                                                            onChange: (e)=>setFuelType(e.target.value),
-                                                            className: "w-full px-2 sm:px-2.5 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-400",
-                                                            children: [
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                    value: "Petrol (95)",
-                                                                    children: "Petrol 95"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/components/auth/Register.tsx",
-                                                                    lineNumber: 492,
-                                                                    columnNumber: 23
-                                                                }, ("TURBOPACK compile-time value", void 0)),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                    value: "Petrol (91)",
-                                                                    children: "Petrol 91"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/components/auth/Register.tsx",
-                                                                    lineNumber: 493,
-                                                                    columnNumber: 23
-                                                                }, ("TURBOPACK compile-time value", void 0)),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                    value: "Diesel",
-                                                                    children: "Diesel"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/components/auth/Register.tsx",
-                                                                    lineNumber: 494,
-                                                                    columnNumber: 23
-                                                                }, ("TURBOPACK compile-time value", void 0)),
-                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
-                                                                    value: "Hybrid",
-                                                                    children: "Hybrid"
-                                                                }, void 0, false, {
-                                                                    fileName: "[project]/src/components/auth/Register.tsx",
-                                                                    lineNumber: 495,
-                                                                    columnNumber: 23
-                                                                }, ("TURBOPACK compile-time value", void 0))
-                                                            ]
-                                                        }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
                                                             lineNumber: 487,
                                                             columnNumber: 21
@@ -1786,10 +1769,69 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                     children: [
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
                                                             className: "block text-xs font-semibold text-zinc-300 mb-1.5",
+                                                            children: "Fuel Type"
+                                                        }, void 0, false, {
+                                                            fileName: "[project]/src/components/auth/Register.tsx",
+                                                            lineNumber: 498,
+                                                            columnNumber: 21
+                                                        }, ("TURBOPACK compile-time value", void 0)),
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("select", {
+                                                            value: fuelType,
+                                                            onChange: (e)=>setFuelType(e.target.value),
+                                                            className: "w-full px-2 sm:px-2.5 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-400",
+                                                            children: [
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                    value: "Petrol (95)",
+                                                                    children: "Petrol 95"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/components/auth/Register.tsx",
+                                                                    lineNumber: 504,
+                                                                    columnNumber: 23
+                                                                }, ("TURBOPACK compile-time value", void 0)),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                    value: "Petrol (91)",
+                                                                    children: "Petrol 91"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/components/auth/Register.tsx",
+                                                                    lineNumber: 505,
+                                                                    columnNumber: 23
+                                                                }, ("TURBOPACK compile-time value", void 0)),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                    value: "Diesel",
+                                                                    children: "Diesel"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/components/auth/Register.tsx",
+                                                                    lineNumber: 506,
+                                                                    columnNumber: 23
+                                                                }, ("TURBOPACK compile-time value", void 0)),
+                                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
+                                                                    value: "Hybrid",
+                                                                    children: "Hybrid"
+                                                                }, void 0, false, {
+                                                                    fileName: "[project]/src/components/auth/Register.tsx",
+                                                                    lineNumber: 507,
+                                                                    columnNumber: 23
+                                                                }, ("TURBOPACK compile-time value", void 0))
+                                                            ]
+                                                        }, void 0, true, {
+                                                            fileName: "[project]/src/components/auth/Register.tsx",
+                                                            lineNumber: 499,
+                                                            columnNumber: 21
+                                                        }, ("TURBOPACK compile-time value", void 0))
+                                                    ]
+                                                }, void 0, true, {
+                                                    fileName: "[project]/src/components/auth/Register.tsx",
+                                                    lineNumber: 497,
+                                                    columnNumber: 19
+                                                }, ("TURBOPACK compile-time value", void 0)),
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                    children: [
+                                                        /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
+                                                            className: "block text-xs font-semibold text-zinc-300 mb-1.5",
                                                             children: "License Plate"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 499,
+                                                            lineNumber: 511,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1800,19 +1842,19 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-2.5 sm:px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 500,
+                                                            lineNumber: 512,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 498,
+                                                    lineNumber: 510,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 472,
+                                            lineNumber: 484,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1829,7 +1871,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 512,
+                                                            lineNumber: 524,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1843,13 +1885,13 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 515,
+                                                            lineNumber: 527,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 511,
+                                                    lineNumber: 523,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1863,7 +1905,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 527,
+                                                            lineNumber: 539,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1877,19 +1919,19 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 530,
+                                                            lineNumber: 542,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 526,
+                                                    lineNumber: 538,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 510,
+                                            lineNumber: 522,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1902,7 +1944,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             children: "Odometer"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 545,
+                                                            lineNumber: 557,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1914,13 +1956,13 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-2.5 sm:px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 548,
+                                                            lineNumber: 560,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 544,
+                                                    lineNumber: 556,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1930,7 +1972,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             children: "Currency"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 558,
+                                                            lineNumber: 570,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1941,13 +1983,13 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-2.5 sm:px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 559,
+                                                            lineNumber: 571,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 557,
+                                                    lineNumber: 569,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1957,7 +1999,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             children: "Gas Price"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 568,
+                                                            lineNumber: 580,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -1970,19 +2012,19 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-full px-2.5 sm:px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-400 font-mono"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 569,
+                                                            lineNumber: 581,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 567,
+                                                    lineNumber: 579,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 543,
+                                            lineNumber: 555,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0)),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2000,20 +2042,20 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                             className: "w-4 h-4"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 590,
+                                                            lineNumber: 602,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0)),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                             children: "Back"
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                                            lineNumber: 591,
+                                                            lineNumber: 603,
                                                             columnNumber: 21
                                                         }, ("TURBOPACK compile-time value", void 0))
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 582,
+                                                    lineNumber: 594,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0)),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2024,7 +2066,7 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                         className: "w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                                        lineNumber: 599,
+                                                        lineNumber: 611,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0)) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
                                                         children: [
@@ -2032,42 +2074,42 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                                                 children: "Finish & Enter Garage"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                                                lineNumber: 602,
+                                                                lineNumber: 614,
                                                                 columnNumber: 25
                                                             }, ("TURBOPACK compile-time value", void 0)),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$lucide$2d$react$40$0$2e$546$2e$0_react$40$19$2e$2$2e$8$2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$circle$2d$check$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__CheckCircle2$3e$__["CheckCircle2"], {
                                                                 className: "w-4 h-4"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                                                lineNumber: 603,
+                                                                lineNumber: 615,
                                                                 columnNumber: 25
                                                             }, ("TURBOPACK compile-time value", void 0))
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                                        lineNumber: 601,
+                                                        lineNumber: 613,
                                                         columnNumber: 23
                                                     }, ("TURBOPACK compile-time value", void 0))
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                                    lineNumber: 593,
+                                                    lineNumber: 605,
                                                     columnNumber: 19
                                                 }, ("TURBOPACK compile-time value", void 0))
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 581,
+                                            lineNumber: 593,
                                             columnNumber: 17
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, "step-2", true, {
                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                    lineNumber: 439,
+                                    lineNumber: 451,
                                     columnNumber: 15
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 325,
+                                lineNumber: 337,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2083,24 +2125,24 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                             children: "Sign In"
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/auth/Register.tsx",
-                                            lineNumber: 615,
+                                            lineNumber: 627,
                                             columnNumber: 15
                                         }, ("TURBOPACK compile-time value", void 0))
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/components/auth/Register.tsx",
-                                    lineNumber: 613,
+                                    lineNumber: 625,
                                     columnNumber: 13
                                 }, ("TURBOPACK compile-time value", void 0))
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 612,
+                                lineNumber: 624,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Register.tsx",
-                        lineNumber: 317,
+                        lineNumber: 329,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0)),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2113,60 +2155,60 @@ const Register = ({ onSwitchToLogin, onBackToLanding })=>{
                                         className: "w-3.5 h-3.5 text-emerald-400"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/auth/Register.tsx",
-                                        lineNumber: 628,
+                                        lineNumber: 640,
                                         columnNumber: 13
                                     }, ("TURBOPACK compile-time value", void 0)),
                                     "TLS / SSL Encrypted"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 627,
+                                lineNumber: 639,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 children: "•"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 631,
+                                lineNumber: 643,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 children: "PostgreSQL Architecture"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 632,
+                                lineNumber: 644,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 children: "•"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 633,
+                                lineNumber: 645,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0)),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$3$2e$2_$40$babel$2b$core$40$7$2e$2_9b50b7e81f1cc2d5e9fa9703fbc766b3$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 children: "Zero Hardcoded Data"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/auth/Register.tsx",
-                                lineNumber: 634,
+                                lineNumber: 646,
                                 columnNumber: 11
                             }, ("TURBOPACK compile-time value", void 0))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/auth/Register.tsx",
-                        lineNumber: 626,
+                        lineNumber: 638,
                         columnNumber: 9
                     }, ("TURBOPACK compile-time value", void 0))
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/auth/Register.tsx",
-                lineNumber: 258,
+                lineNumber: 270,
                 columnNumber: 7
             }, ("TURBOPACK compile-time value", void 0))
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/auth/Register.tsx",
-        lineNumber: 253,
+        lineNumber: 265,
         columnNumber: 5
     }, ("TURBOPACK compile-time value", void 0));
 };

@@ -82,6 +82,27 @@ export const api = {
     return null;
   },
 
+  async updateVehicle(id: string, payload: Partial<VehicleConfig>): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/vehicles/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.warn('API updateVehicle: Non-JSON response received');
+        return false;
+      }
+      
+      return res.ok;
+    } catch (e) {
+      console.warn('API updateVehicle fallback:', e);
+      return false;
+    }
+  },
+
   // 2. Fuel Entries
   async getFuelEntries(vehicleId?: string): Promise<FuelEntry[]> {
     try {

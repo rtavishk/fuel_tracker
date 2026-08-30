@@ -557,6 +557,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (newConfig.currentFuelPrice !== undefined) {
       setCurrentFuelPrice(newConfig.currentFuelPrice);
     }
+    
+    // Persist to database
+    api.updateVehicle(activeVehicleId, newConfig);
+    
     triggerManualSync();
   };
 

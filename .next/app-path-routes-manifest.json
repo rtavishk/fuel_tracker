@@ -5,6 +5,7 @@
   "/api/auth/register/route": "/api/auth/register",
   "/api/fuel-entries/[id]/route": "/api/fuel-entries/[id]",
   "/api/fuel-entries/route": "/api/fuel-entries",
+  "/api/health/route": "/api/health",
   "/api/maintenance/[id]/route": "/api/maintenance/[id]",
   "/api/maintenance/route": "/api/maintenance",
   "/api/trip-entries/[id]/route": "/api/trip-entries/[id]",

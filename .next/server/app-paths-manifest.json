@@ -5,6 +5,7 @@
   "/api/auth/register/route": "app/api/auth/register/route.js",
   "/api/fuel-entries/[id]/route": "app/api/fuel-entries/[id]/route.js",
   "/api/fuel-entries/route": "app/api/fuel-entries/route.js",
+  "/api/health/route": "app/api/health/route.js",
   "/api/maintenance/[id]/route": "app/api/maintenance/[id]/route.js",
   "/api/maintenance/route": "app/api/maintenance/route.js",
   "/api/trip-entries/[id]/route": "app/api/trip-entries/[id]/route.js",

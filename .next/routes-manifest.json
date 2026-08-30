@@ -93,6 +93,12 @@
       "namedRegex": "^/api/fuel\\-entries(?:/)?$"
     },
     {
+      "page": "/api/health",
+      "regex": "^/api/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/health(?:/)?$"
+    },
+    {
       "page": "/api/maintenance",
       "regex": "^/api/maintenance(?:/)?$",
       "routeKeys": {},

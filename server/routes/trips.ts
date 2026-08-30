@@ -51,22 +51,11 @@ router.post('/', validateBody(TripEntrySchema), async (req: AuthenticatedRequest
     const odo = req.body.totalCumulativeOdometer ?? req.body.totalOdometer ?? 0;
 
     if (prisma) {
-      const trip = await prisma.tripEntry.upsert({
-        where: {
-          vehicleId_date: {
-            vehicleId: req.body.vehicleId,
-            date: new Date(req.body.date),
-          },
-        },
-        create: {
+      const trip = await prisma.tripEntry.create({
+        data: {
           userId,
           vehicleId: req.body.vehicleId,
           date: new Date(req.body.date),
-          totalCumulativeOdometer: odo,
-          category: req.body.category || 'Commute',
-          notes: req.body.notes || null,
-        },
-        update: {
           totalCumulativeOdometer: odo,
           category: req.body.category || 'Commute',
           notes: req.body.notes || null,

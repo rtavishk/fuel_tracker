@@ -108,7 +108,9 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={entryToEdit ? 'Edit Fuel Entry' : 'Log Refueling Fill-up'}
-      subtitle="Odometer figures logged here are your car's remaining-range gauge (Distance-to-Empty)."
+      subtitle={vehicleConfig.odometerType === 'fuelRange' 
+        ? "Track fuel purchases and refill amounts. Distance tracking is done separately in the Trip Log."
+        : "Odometer figures logged here are your car's remaining-range gauge (Distance-to-Empty)."}
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,9 +118,10 @@ export const AddFuelModal: React.FC<AddFuelModalProps> = ({
         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-200 text-xs flex items-start gap-2">
           <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
           <p>
-            <strong className="text-emerald-300">Distance-to-Empty Gauge:</strong> Log the remaining km
-            reading before fueling (e.g. 70–100 km) and the gauge after fueling (jumps to ~
-            {fullRangeBenchmark} km).
+            {vehicleConfig.odometerType === 'fuelRange' 
+              ? <><strong className="text-emerald-300">Fuel Purchase Tracking:</strong> Log fuel costs and amounts. For distance tracking, use the Trip Log to record your fuel range readings after driving.</>
+              : <><strong className="text-emerald-300">Distance-to-Empty Gauge:</strong> Log the remaining km reading before fueling (e.g. 70–100 km) and the gauge after fueling (jumps to ~{fullRangeBenchmark} km).</>
+            }
           </p>
         </div>
 

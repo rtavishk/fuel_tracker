@@ -2,26 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { AddMaintenanceModal } from './AddMaintenanceModal';
 import { AddVehicleModal } from '../garage/AddVehicleModal';
-import { MaintenanceScheduleItem } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 import {
   Settings as SettingsIcon,
   Car,
   Fuel,
-  Wrench,
   Cloud,
   CheckCircle2,
-  AlertTriangle,
   Plus,
   Edit2,
   Trash2,
-  RotateCcw,
   Download,
   ShieldCheck,
   RefreshCw,
-  Sparkles,
   Info,
   DollarSign,
   TrendingUp,
@@ -33,6 +27,7 @@ import {
   Zap,
   Gauge,
   LogOut,
+  RotateCcw,
 } from 'lucide-react';
 
 export const Settings: React.FC = () => {
@@ -48,9 +43,6 @@ export const Settings: React.FC = () => {
     updateFuelPrice,
     setIsFuelPriceModalOpen,
     setIsProfileModalOpen,
-    computedMaintenance,
-    deleteMaintenanceItem,
-    markMaintenanceServiced,
     iCloudSyncEnabled,
     setICloudSyncEnabled,
     isSyncing,
@@ -64,9 +56,7 @@ export const Settings: React.FC = () => {
     preTripEntries,
   } = useApp();
 
-  const [isMaintModalOpen, setIsMaintModalOpen] = useState(false);
   const [isAddCarOpen, setIsAddCarOpen] = useState(false);
-  const [itemToEdit, setItemToEdit] = useState<MaintenanceScheduleItem | null>(null);
   const [saveToast, setSaveToast] = useState(false);
 
   // Active Vehicle Form states
@@ -89,6 +79,9 @@ export const Settings: React.FC = () => {
   const [targetEfficiency, setTargetEfficiency] = useState(
     vehicleConfig.targetEfficiency?.toString() || '14.5'
   );
+  const [odometerType, setOdometerType] = useState<'cumulative' | 'fuelRange'>(
+    vehicleConfig.odometerType || 'cumulative'
+  );
 
   // Synchronize local form when active vehicle changes
   useEffect(() => {
@@ -105,6 +98,7 @@ export const Settings: React.FC = () => {
     setVolumeUnit(vehicleConfig.volumeUnit);
     setFuelType(vehicleConfig.fuelType);
     setTargetEfficiency(vehicleConfig.targetEfficiency?.toString() || '14.5');
+    setOdometerType(vehicleConfig.odometerType || 'cumulative');
   }, [vehicleConfig, activeVehicleId]);
 
   const handleSaveVehicleConfig = (e: React.FormEvent) => {
@@ -123,6 +117,7 @@ export const Settings: React.FC = () => {
       volumeUnit,
       fuelType: fuelType as any,
       targetEfficiency: parseFloat(targetEfficiency) || 14.5,
+      odometerType,
     });
     setSaveToast(true);
     setTimeout(() => setSaveToast(false), 2500);
@@ -139,7 +134,6 @@ export const Settings: React.FC = () => {
       fuelEntries,
       tripEntries,
       preTripEntries,
-      maintenanceItems: computedMaintenance,
     };
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -518,6 +512,23 @@ export const Settings: React.FC = () => {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+              <div>
+                <label className="block text-xs font-semibold text-neutral-300 mb-1">Odometer Type</label>
+                <select
+                  value={odometerType}
+                  onChange={(e) => setOdometerType(e.target.value as 'cumulative' | 'fuelRange')}
+                  className="w-full px-3 py-2 bg-[#050505] border border-[#222222] rounded-xl text-xs text-white focus:outline-none focus:border-orange-500 cursor-pointer"
+                >
+                  <option value="cumulative">Cumulative Mileage (e.g. 42,500 km)</option>
+                  <option value="fuelRange">Fuel Range / Distance-to-Empty (e.g. 650 km)</option>
+                </select>
+                <span className="text-[10px] text-neutral-500 mt-1 block">
+                  Choose how your vehicle displays odometer readings
+                </span>
+              </div>
+            </div>
+
             <div className="pt-3 border-t border-[#1f1f1f] flex justify-end">
               <button
                 type="submit"
@@ -530,145 +541,7 @@ export const Settings: React.FC = () => {
         </div>
       </Card>
 
-      {/* 4. Engine Maintenance Schedule Manager */}
-      <Card className="p-6 border-[#222222] bg-[#0a0a0a] shadow-xl" glow="amber">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-3 border-b border-[#1f1f1f]">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
-              <Wrench className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white">Engine & Maintenance Schedules</h3>
-              <p className="text-[11px] text-neutral-400">
-                Track oil changes, spark plugs, filters, and fluids based on cumulative odometer (
-                {vehicleConfig.currentCumulativeOdometer.toLocaleString()} {vehicleConfig.distanceUnit})
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setItemToEdit(null);
-              setIsMaintModalOpen(true);
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 border border-orange-500/30 text-xs font-bold transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Maintenance Task</span>
-          </button>
-        </div>
-
-        {/* Maintenance Items List */}
-        <div className="space-y-3">
-          {computedMaintenance.map((item) => {
-            const isOverdue = item.status === 'Overdue';
-            const isDueSoon = item.status === 'Due Soon';
-
-            return (
-              <div
-                key={item.id}
-                className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
-                  isOverdue
-                    ? 'bg-rose-950/20 border-rose-500/30'
-                    : isDueSoon
-                    ? 'bg-amber-950/20 border-amber-500/30'
-                    : 'bg-[#050505] border-[#222222]'
-                }`}
-              >
-                {/* Title & Category */}
-                <div className="space-y-1 md:max-w-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-white">{item.title}</span>
-                    <Badge
-                      variant={isOverdue ? 'rose' : isDueSoon ? 'amber' : 'emerald'}
-                      size="xs"
-                      dot={isOverdue || isDueSoon}
-                    >
-                      {item.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-neutral-400">
-                    Category: {item.category} • Interval: every {item.intervalKm.toLocaleString()}{' '}
-                    {vehicleConfig.distanceUnit}
-                  </p>
-                  {item.notes && <p className="text-[11px] text-neutral-500 italic">{item.notes}</p>}
-                </div>
-
-                {/* Progress / Km remaining */}
-                <div className="flex-1 max-w-sm space-y-1.5 font-mono">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-neutral-400">
-                      Last: {item.lastServiceOdometer.toLocaleString()} {vehicleConfig.distanceUnit}
-                    </span>
-                    <span
-                      className={`font-bold ${
-                        isOverdue
-                          ? 'text-rose-400'
-                          : isDueSoon
-                          ? 'text-amber-400'
-                          : 'text-orange-400'
-                      }`}
-                    >
-                      {item.kmRemaining <= 0
-                        ? `${Math.abs(item.kmRemaining).toLocaleString()} ${vehicleConfig.distanceUnit} OVERDUE`
-                        : `${item.kmRemaining.toLocaleString()} ${vehicleConfig.distanceUnit} left`}
-                    </span>
-                  </div>
-
-                  <div className="w-full bg-[#1a1a1a] h-2 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        isOverdue
-                          ? 'bg-rose-500'
-                          : isDueSoon
-                          ? 'bg-amber-500'
-                          : 'bg-orange-500'
-                      }`}
-                      style={{ width: `${Math.min(100, item.progressPercent)}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      markMaintenanceServiced(
-                        item.id,
-                        vehicleConfig.currentCumulativeOdometer
-                      )
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 text-xs font-semibold border border-orange-500/30 transition-colors cursor-pointer"
-                  >
-                    Mark Serviced ({vehicleConfig.currentCumulativeOdometer.toLocaleString()} {vehicleConfig.distanceUnit})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setItemToEdit(item);
-                      setIsMaintModalOpen(true);
-                    }}
-                    className="p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-[#1a1a1a] transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteMaintenanceItem(item.id)}
-                    className="p-2 rounded-lg text-neutral-400 hover:text-rose-400 hover:bg-[#1a1a1a] transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* 5. Cloud & iCloud Realtime Sync Card */}
+      {/* 4. Cloud & iCloud Realtime Sync Card */}
       <Card className="p-6 border-[#222222] bg-[#0a0a0a] shadow-xl" glow="amber">
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#1f1f1f]">
           <div className="flex items-center gap-2.5">
@@ -769,13 +642,6 @@ export const Settings: React.FC = () => {
           </button>
         </div>
       </Card>
-
-      {/* Add Maintenance Modal */}
-      <AddMaintenanceModal
-        isOpen={isMaintModalOpen}
-        onClose={() => setIsMaintModalOpen(false)}
-        itemToEdit={itemToEdit}
-      />
 
       {/* Add Vehicle Modal */}
       <AddVehicleModal

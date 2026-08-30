@@ -120,8 +120,35 @@ export async function POST(req: NextRequest) {
         totalCumulativeOdometer: odo,
       },
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create trip entry error:', error);
-    return NextResponse.json({ error: 'Failed to save trip entry' }, { status: 500 });
+    console.error('Error details:', error.message, error.code, error.meta);
+    
+    // Check for unique constraint violation
+    if (error.code === 'P2002') {
+      const constraintName = error.meta?.target || 'unknown';
+      return NextResponse.json({ 
+        error: 'Duplicate entry - a trip for this vehicle and date already exists',
+        message: 'Cannot add multiple trips for the same vehicle on the same date. Please run the SQL migration to remove the unique constraint.',
+        constraint: constraintName,
+        details: error.meta 
+      }, { status: 400 });
+    }
+    
+    // Check for validation errors
+    if (error.code === 'P2003') {
+      return NextResponse.json({ 
+        error: 'Foreign key constraint failed',
+        message: 'The vehicle ID or user ID is invalid',
+        details: error.meta 
+      }, { status: 400 });
+    }
+    
+    return NextResponse.json({ 
+      error: 'Failed to save trip entry',
+      message: error.message || 'An unexpected error occurred',
+      code: error.code,
+      details: error.meta 
+    }, { status: 500 });
   }
 }

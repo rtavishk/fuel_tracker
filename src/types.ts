@@ -41,6 +41,7 @@ export interface VehicleConfig {
   targetEfficiency?: number; // Baseline / Factory rating (e.g. 14.5 km/L)
   currentFuelPrice?: number; // Active price per unit
   priceHistory?: FuelPriceRecord[];
+  odometerType?: 'cumulative' | 'fuelRange'; // 'cumulative' = real mileage, 'fuelRange' = distance-to-empty (like BJ30)
   createdAt?: string;
 }
 
@@ -74,7 +75,8 @@ export interface ComputedFuelEntry extends FuelEntry {
 export interface TripEntry {
   id: string;
   date: string; // YYYY-MM-DD
-  totalOdometer: number; // Cumulative real odometer (e.g. 42150 km)
+  totalOdometer: number; // Can be cumulative real odometer OR fuel range (distance-to-empty) depending on vehicle config
+  totalCumulativeOdometer?: number; // Database field name for cumulative odometer
   category?: 'Commute' | 'Highway' | 'City' | 'Business' | 'Roadtrip' | 'Errand' | 'Work' | 'Other';
   notes?: string;
   createdAt: string;

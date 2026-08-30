@@ -23,6 +23,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
   );
   const [category, setCategory] = useState<TripEntry['category']>('Commute');
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string>('');
 
   // Get previous latest odometer for preview
   const latestOdo =
@@ -31,6 +32,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
       : vehicleConfig.currentCumulativeOdometer;
 
   useEffect(() => {
+    setError('');
     if (tripToEdit) {
       setDate(tripToEdit.date);
       setTotalOdometer(tripToEdit.totalOdometer.toString());
@@ -50,38 +52,57 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
     e.preventDefault();
     if (numOdo <= 0) return;
 
-    if (tripToEdit) {
-      updateTripEntry(tripToEdit.id, {
-        date,
-        totalOdometer: numOdo,
-        category,
-        notes: notes.trim() || undefined,
-      });
-    } else {
-      addTripEntry({
-        date,
-        totalOdometer: numOdo,
-        category,
-        notes: notes.trim() || undefined,
-      });
+    setError('');
+
+    try {
+      if (tripToEdit) {
+        updateTripEntry(tripToEdit.id, {
+          date,
+          totalOdometer: numOdo,
+          category,
+          notes: notes.trim() || undefined,
+        });
+      } else {
+        addTripEntry({
+          date,
+          totalOdometer: numOdo,
+          category,
+          notes: notes.trim() || undefined,
+        });
+      }
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save trip. Please try again.');
     }
-    onClose();
   };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={tripToEdit ? 'Edit Daily Trip Entry' : 'Log Daily Trip (Cumulative Odometer)'}
-      subtitle="Enter the car's real cumulative odometer at the end of the day or trip."
+      title={tripToEdit ? 'Edit Daily Trip Entry' : `Log Daily Trip (${vehicleConfig.odometerType === 'fuelRange' ? 'Fuel Range' : 'Cumulative Odometer'})`}
+      subtitle={vehicleConfig.odometerType === 'fuelRange' 
+        ? "Log your current fuel range after driving. Distance is calculated by comparing with previous readings." 
+        : "Enter the car's real cumulative odometer at the end of the day or trip."}
       maxWidth="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-200 text-xs flex items-start gap-2">
+            <Info className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <p>{error}</p>
+          </div>
+        )}
+
         <div className="p-3 rounded-xl bg-teal-500/10 border border-teal-500/25 text-teal-200 text-xs flex items-start gap-2">
           <Info className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
           <p>
-            <strong className="text-teal-300">Cumulative Odometer:</strong> Enter the car's actual dashboard mileage (e.g.{' '}
-            {latestOdo.toLocaleString()} km). Daily distance is calculated from the previous entry.
+            <strong className="text-teal-300">
+              {vehicleConfig.odometerType === 'fuelRange' ? 'Fuel Range / Distance-to-Empty:' : 'Cumulative Odometer:'}
+            </strong> 
+            {vehicleConfig.odometerType === 'fuelRange' 
+              ? ' Enter the current fuel range reading AFTER driving (e.g., 650 km). The system calculates distance by comparing with previous readings. Fill-ups are handled separately in the Fuel Log.'
+              : ' Enter the car\'s actual dashboard mileage (e.g., 145250 km). Daily distance is calculated from the previous entry.'}
           </p>
         </div>
 
@@ -104,10 +125,12 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="block text-xs font-semibold text-zinc-300">
-              End-of-Day Cumulative Odometer ({vehicleConfig.distanceUnit})
+              {vehicleConfig.odometerType === 'fuelRange' 
+                ? 'Fuel Range / Distance-to-Empty' 
+                : 'End-of-Day Cumulative Odometer'} ({vehicleConfig.distanceUnit})
             </label>
             <span className="text-[10px] text-zinc-400 font-mono">
-              Prev: {latestOdo.toLocaleString()} km
+              Prev: {latestOdo.toLocaleString()} {vehicleConfig.distanceUnit}
             </span>
           </div>
           <input
@@ -116,7 +139,7 @@ export const AddTripModal: React.FC<AddTripModalProps> = ({
             step="any"
             value={totalOdometer}
             onChange={(e) => setTotalOdometer(e.target.value)}
-            placeholder="145250"
+            placeholder={vehicleConfig.odometerType === 'fuelRange' ? '650' : '145250'}
             required
             className="w-full px-3 py-2 bg-[#09090b] border border-zinc-800 rounded-xl text-base font-bold text-teal-400 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 font-mono"
           />

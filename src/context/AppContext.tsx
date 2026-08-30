@@ -161,7 +161,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [vehicles, setVehicles] = useState<VehicleConfig[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.VEHICLES_LIST);
-      return saved ? JSON.parse(saved) : [defaultVehicle];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map((v: any) => ({
+          ...v,
+          // Add missing fields if they don't exist (migration)
+          odometerType: v.odometerType || 'cumulative',
+          volumeUnit: v.volumeUnit || 'L',
+          distanceUnit: v.distanceUnit || 'km',
+          currency: v.currency || 'Rs.',
+        }));
+      }
+      return [defaultVehicle];
     } catch {
       return [defaultVehicle];
     }
@@ -361,12 +372,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Computed Trip Entries
   const computedTripEntries = useMemo(() => {
-    return computeTripEntries(tripEntries, fuelStats.avgCostPerKm);
-  }, [tripEntries, fuelStats.avgCostPerKm]);
+    const odometerType = activeVehicle.odometerType || 'cumulative';
+    return computeTripEntries(tripEntries, fuelStats.avgCostPerKm, odometerType);
+  }, [tripEntries, fuelStats.avgCostPerKm, activeVehicle.odometerType, activeVehicle.name]);
 
   // Update vehicle's current cumulative odometer from latest trip entry
   useEffect(() => {
-    if (computedTripEntries.length > 0) {
+    if (computedTripEntries.length > 0 && activeVehicle.odometerType !== 'fuelRange') {
       const highestOdo = Math.max(...computedTripEntries.map((t) => t.totalOdometer));
       if (highestOdo > activeVehicle.currentCumulativeOdometer) {
         setVehicles((prev) =>
@@ -374,7 +386,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
       }
     }
-  }, [computedTripEntries, activeVehicle.currentCumulativeOdometer, activeVehicleId]);
+  }, [computedTripEntries, activeVehicle.currentCumulativeOdometer, activeVehicleId, activeVehicle.odometerType]);
 
   // Computed Pre-Trip Entries
   const computedPreTripEntries = useMemo(() => {
@@ -623,6 +635,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
     }
 
+    // For fuel range type vehicles, just update the current cumulative odometer
+    // Trip entries should be created manually when logging the fuel range after driving
+    if (entryData.afterFuelingOdometer && activeVehicle.odometerType === 'fuelRange') {
+      const afterRange = entryData.afterFuelingOdometer;
+      // Update vehicle's current cumulative odometer to match the fuel range
+      updateVehicleConfig({ currentCumulativeOdometer: afterRange });
+    }
+
     // Async server persistence call
     api.createFuelEntry({
       vehicleId: activeVehicleId,
@@ -674,6 +694,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     api.createTripEntry({
       vehicleId: activeVehicleId,
       ...newEntry,
+      totalCumulativeOdometer: newEntry.totalOdometer,
     });
 
     triggerManualSync();

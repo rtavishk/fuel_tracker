@@ -205,18 +205,23 @@ export const api = {
       
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        console.warn('API createTripEntry: Non-JSON response received');
+        console.warn('API createTripEntry: Non-JSON response received', res.status, res.statusText);
         return null;
       }
       
       if (res.ok) {
         const data = await res.json();
         return data.trip;
+      } else {
+        // Log error response
+        const errorData = await res.json();
+        console.error('API createTripEntry error:', errorData);
+        throw new Error(errorData.error || errorData.message || 'Failed to create trip entry');
       }
     } catch (e) {
       console.warn('API createTripEntry fallback:', e);
+      throw e;
     }
-    return null;
   },
 
   async deleteTripEntry(id: string): Promise<boolean> {

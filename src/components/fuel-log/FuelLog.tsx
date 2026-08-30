@@ -171,7 +171,7 @@ export const FuelLog: React.FC = () => {
             <span className="text-2xl sm:text-3xl font-black text-white">
               {fuelStats.completedCount > 0 ? fuelStats.avgEconomy.toFixed(2) : '—'}
             </span>
-            <span className="text-xs font-semibold text-emerald-400 font-sans">
+            <span className="text-xs font-semibold text-emerald-400 font-sans whitespace-nowrap">
               {vehicleConfig.distanceUnit}/{vehicleConfig.volumeUnit}
             </span>
           </div>
@@ -179,7 +179,7 @@ export const FuelLog: React.FC = () => {
             {fuelStats.completedCount > 0 ? (
               <>
                 Best:{' '}
-                <span className="font-mono text-emerald-300 font-bold">
+                <span className="font-mono text-emerald-300 font-bold whitespace-nowrap">
                   {fuelStats.bestEconomy.toFixed(1)} {vehicleConfig.distanceUnit}/{vehicleConfig.volumeUnit}
                 </span>
               </>
@@ -199,7 +199,7 @@ export const FuelLog: React.FC = () => {
             <span className="text-2xl sm:text-3xl font-black text-white">
               {fuelStats.completedCount > 0 ? fuelStats.avgCostPerKm.toFixed(2) : '—'}
             </span>
-            <span className="text-xs font-semibold text-amber-400 font-sans">
+            <span className="text-xs font-semibold text-amber-400 font-sans whitespace-nowrap">
               {vehicleConfig.currency}/{vehicleConfig.distanceUnit}
             </span>
           </div>
@@ -222,7 +222,7 @@ export const FuelLog: React.FC = () => {
           </div>
           <p className="text-[11px] text-zinc-400 mt-1 font-mono">
             Total Litres:{' '}
-            <span className="text-teal-300 font-bold">
+            <span className="text-teal-300 font-bold whitespace-nowrap">
               {fuelStats.totalLitres.toFixed(1)} {vehicleConfig.volumeUnit}
             </span>
           </p>
@@ -238,7 +238,7 @@ export const FuelLog: React.FC = () => {
             <span className="text-2xl sm:text-3xl font-black text-white">
               {fuelStats.completedCount > 0 ? fuelStats.latestPrice.toFixed(1) : '—'}
             </span>
-            <span className="text-xs font-semibold text-lime-400 font-sans">
+            <span className="text-xs font-semibold text-lime-400 font-sans whitespace-nowrap">
               {vehicleConfig.currency}/{vehicleConfig.volumeUnit}
             </span>
           </div>
@@ -298,7 +298,7 @@ export const FuelLog: React.FC = () => {
                       <div className="text-emerald-400 font-bold">
                         {vehicleConfig.currency} {entry.amountPaid.toLocaleString()}
                       </div>
-                      <div className="text-[11px] text-zinc-400">
+                      <div className="text-[11px] text-zinc-400 whitespace-nowrap">
                         @{entry.pricePerLitre.toFixed(2)}/{vehicleConfig.volumeUnit}
                       </div>
                     </td>
@@ -306,7 +306,7 @@ export const FuelLog: React.FC = () => {
                     {/* Litres Pumped */}
                     <td className="py-3.5 px-4 font-mono">
                       <span className="font-bold text-white">{entry.litresFueled.toFixed(2)}</span>{' '}
-                      <span className="text-zinc-400">{vehicleConfig.volumeUnit}</span>
+                      <span className="text-zinc-400 whitespace-nowrap">{vehicleConfig.volumeUnit}</span>
                     </td>
 
                     {/* Gauge Reading (Before → After) */}
@@ -371,7 +371,7 @@ export const FuelLog: React.FC = () => {
                           <span className="text-sm font-black text-emerald-400">
                             {entry.fuelEconomy?.toFixed(2)}
                           </span>
-                          <span className="text-[10px] text-zinc-400 ml-1">
+                          <span className="text-[10px] text-zinc-400 ml-1 whitespace-nowrap">
                             {vehicleConfig.distanceUnit}/{vehicleConfig.volumeUnit}
                           </span>
                         </div>
@@ -450,13 +450,13 @@ export const FuelLog: React.FC = () => {
                       {entry.isPending ? 'Pending' : 'Completed'}
                     </Badge>
                   </div>
-                  <p className="text-xs text-zinc-400">{entry.fuelStation || entry.pricePerLitre ? `@ ${entry.pricePerLitre.toFixed(2)}/${vehicleConfig.volumeUnit}` : 'Station not logged'}</p>
+                  <p className="text-xs text-zinc-400 whitespace-nowrap">{entry.fuelStation || entry.pricePerLitre ? `@ ${entry.pricePerLitre.toFixed(2)}/${vehicleConfig.volumeUnit}` : 'Station not logged'}</p>
                 </div>
                 <div className="text-right font-mono">
                   <div className="font-black text-emerald-400 text-sm">
                     {vehicleConfig.currency} {entry.amountPaid.toLocaleString()}
                   </div>
-                  <div className="text-[10px] text-zinc-400">
+                  <div className="text-[10px] text-zinc-400 whitespace-nowrap">
                     {entry.litresFueled.toFixed(1)} {vehicleConfig.volumeUnit}
                   </div>
                 </div>
@@ -465,19 +465,19 @@ export const FuelLog: React.FC = () => {
               <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-[#09090b] border border-zinc-800 text-center font-mono">
                 <div>
                   <span className="text-[10px] text-zinc-400 block uppercase">Economy</span>
-                  <span className="text-xs font-bold text-white">
+                  <span className="text-xs font-bold text-white whitespace-nowrap">
                     {entry.fuelEconomy ? `${entry.fuelEconomy.toFixed(1)} ${vehicleConfig.distanceUnit}/${vehicleConfig.volumeUnit}` : '—'}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-zinc-400 block uppercase">Cost/km</span>
-                  <span className="text-xs font-bold text-amber-400">
+                  <span className="text-xs font-bold text-amber-400 whitespace-nowrap">
                     {entry.costPerKm ? `${vehicleConfig.currency || 'Rs.'} ${entry.costPerKm.toFixed(2)}` : '—'}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-zinc-400 block uppercase">Distance Added</span>
-                  <span className="text-xs font-bold text-teal-400">
+                  <span className="text-xs font-bold text-teal-400 whitespace-nowrap">
                     {entry.distanceThisFill && entry.distanceThisFill > 0 ? `+${entry.distanceThisFill} ${vehicleConfig.distanceUnit}` : '—'}
                   </span>
                 </div>

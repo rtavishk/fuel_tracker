@@ -13,16 +13,6 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Line,
-  Bar,
-  ComposedChart,
-} from 'recharts';
 
 export const DailyTrips: React.FC = () => {
   const {
@@ -55,26 +45,19 @@ export const DailyTrips: React.FC = () => {
   const latest7DayAvg =
     computedTripEntries.length > 0 ? computedTripEntries[0].sevenDayRollingAvg : 0;
 
-  const totalKmRecorded = computedTripEntries.reduce(
-    (sum, t) => sum + (t.kmDrivenToday || 0),
-    0
-  );
+  // Calculate total distance driven by summing all negative changes (odometer decreases)
+  const totalDistanceDriven = computedTripEntries.reduce((sum, trip, index) => {
+    if (index === 0) return sum;
+    const prevOdo = computedTripEntries[index - 1].totalOdometer;
+    const change = trip.totalOdometer - prevOdo;
+    // Only add negative changes (driving) as positive distance
+    return change < 0 ? sum + Math.abs(change) : sum;
+  }, 0);
 
   const totalTripFuelCost = computedTripEntries.reduce(
     (sum, t) => sum + (t.estimatedFuelCostToday || 0),
     0
   );
-
-  // Chart data (chronological ascending for last 10 entries)
-  const chartData = [...computedTripEntries]
-    .reverse()
-    .slice(-12)
-    .map((t) => ({
-      date: t.date.slice(5),
-      kmDriven: t.kmDrivenToday,
-      rollingAvg: Math.round(t.sevenDayRollingAvg),
-      cost: Math.round(t.estimatedFuelCostToday),
-    }));
 
   const categoryVariants: Record<string, 'emerald' | 'teal' | 'lime' | 'amber' | 'indigo' | 'slate'> = {
     Commute: 'emerald',
@@ -153,23 +136,23 @@ export const DailyTrips: React.FC = () => {
           <p className="text-[11px] text-zinc-400 mt-1">Average over last 7 logged entries</p>
         </Card>
 
-        {/* Total Tracked Km */}
+        {/* Total Distance Driven */}
         <Card className="p-4 bg-[#121215]/90 border-zinc-800">
           <div className="flex items-center justify-between text-zinc-400 mb-1">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-lime-400 font-mono">
-              Total Logged Distance
+              Total Distance Driven
             </span>
             <Navigation className="w-4 h-4 text-lime-400" />
           </div>
           <div className="flex items-baseline gap-1 font-mono">
             <span className="text-2xl sm:text-3xl font-black text-white">
-              {totalKmRecorded.toLocaleString()}
+              {totalDistanceDriven.toLocaleString()}
             </span>
             <span className="text-xs font-semibold text-zinc-400 font-sans">
               {vehicleConfig.distanceUnit}
             </span>
           </div>
-          <p className="text-[11px] text-zinc-400 mt-1">Across all logged trip days</p>
+          <p className="text-[11px] text-zinc-400 mt-1">Sum of all odometer decreases</p>
         </Card>
 
         {/* Est Fuel Cost */}
@@ -192,56 +175,6 @@ export const DailyTrips: React.FC = () => {
         </Card>
       </div>
 
-      {/* Chart: Daily Distance & 7-Day Rolling Trend */}
-      {chartData.length > 1 && (
-        <Card className="p-5 border-zinc-800 bg-[#121215]/90">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-white">Daily Distance & 7-Day Rolling Trend</h3>
-              <p className="text-xs text-zinc-400">
-                Bars represent daily kilometers driven; line represents the 7-day rolling average.
-              </p>
-            </div>
-            <Badge variant="teal" size="xs">
-              Trend Analysis
-            </Badge>
-          </div>
-          <div className="h-60 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="date" stroke="#71717a" fontSize={11} tickLine={false} />
-                <YAxis stroke="#71717a" fontSize={11} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#121215',
-                    borderColor: '#27272a',
-                    borderRadius: '0.75rem',
-                    fontSize: '12px',
-                    color: '#f4f4f5',
-                  }}
-                />
-                <Bar
-                  dataKey="kmDriven"
-                  name="Km Driven Today"
-                  fill="#14b8a6"
-                  radius={[4, 4, 0, 0]}
-                  barSize={20}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="rollingAvg"
-                  name="7-Day Rolling Avg (km)"
-                  stroke="#34d399"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#34d399', r: 3 }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      )}
-
       {/* Trip Log Table */}
       <Card className="p-0 border-zinc-800 bg-[#121215]/90 overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between">
@@ -259,8 +192,8 @@ export const DailyTrips: React.FC = () => {
             <thead className="bg-[#09090b] text-zinc-400 border-b border-zinc-800 font-semibold uppercase tracking-wider font-mono">
               <tr>
                 <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Cumulative Odometer</th>
-                <th className="py-3 px-4">Distance Driven</th>
+                <th className="py-3 px-4">Odometer Reading</th>
+                <th className="py-3 px-4">Change</th>
                 <th className="py-3 px-4">7-Day Rolling Avg</th>
                 <th className="py-3 px-4">Est. Fuel Cost</th>
                 <th className="py-3 px-4">Category & Notes</th>
@@ -273,20 +206,43 @@ export const DailyTrips: React.FC = () => {
                   {/* Date */}
                   <td className="py-3.5 px-4 font-semibold text-white">{trip.date}</td>
 
-                  {/* Cumulative Odometer */}
+                  {/* Odometer Reading */}
                   <td className="py-3.5 px-4 font-mono font-bold text-zinc-100">
                     {trip.totalOdometer.toLocaleString()} {vehicleConfig.distanceUnit}
                   </td>
 
-                  {/* Distance Driven */}
+                  {/* Change */}
                   <td className="py-3.5 px-4 font-mono">
                     {trip.isFirstEntry ? (
                       <span className="text-zinc-500 italic">Baseline entry</span>
-                    ) : (
-                      <span className="font-bold text-emerald-400">
-                        +{trip.kmDrivenToday} {vehicleConfig.distanceUnit}
-                      </span>
-                    )}
+                    ) : (() => {
+                      const currentIndex = computedTripEntries.findIndex(t => t.id === trip.id);
+                      const prevIndex = currentIndex - 1;
+                      if (prevIndex >= 0) {
+                        const prevOdo = computedTripEntries[prevIndex].totalOdometer;
+                        const change = trip.totalOdometer - prevOdo;
+                        if (change > 0) {
+                          return (
+                            <span className="font-bold text-emerald-400">
+                              +{change.toLocaleString()} {vehicleConfig.distanceUnit}
+                            </span>
+                          );
+                        } else if (change < 0) {
+                          return (
+                            <span className="font-bold text-rose-400">
+                              {change.toLocaleString()} {vehicleConfig.distanceUnit}
+                            </span>
+                          );
+                        } else {
+                          return (
+                            <span className="text-zinc-400">
+                              0 {vehicleConfig.distanceUnit}
+                            </span>
+                          );
+                        }
+                      }
+                      return <span className="text-zinc-500 italic">—</span>;
+                    })()}
                   </td>
 
                   {/* 7-Day Rolling Avg */}
@@ -374,27 +330,46 @@ export const DailyTrips: React.FC = () => {
                 </div>
 
                 <div className="text-right font-mono">
-                  {trip.isFirstEntry ? (
-                    <span className="text-xs text-zinc-400 italic">Baseline</span>
-                  ) : (
-                    <>
-                      <div className="text-sm font-bold text-emerald-400">
-                        +{trip.kmDrivenToday} {vehicleConfig.distanceUnit}
-                      </div>
-                      <div className="text-[11px] text-amber-300">
-                        {vehicleConfig.currency} {trip.estimatedFuelCostToday.toFixed(0)} est.
-                      </div>
-                    </>
-                  )}
+                  <div className="text-sm font-bold text-zinc-100">
+                    {trip.totalOdometer.toLocaleString()} {vehicleConfig.distanceUnit}
+                  </div>
+                  <div className="text-[11px] text-zinc-400">
+                    Odometer
+                  </div>
                 </div>
               </div>
 
               <div className="p-2.5 rounded-xl bg-[#09090b] border border-zinc-800 flex items-center justify-between text-xs font-mono">
                 <div>
-                  <span className="text-[10px] text-zinc-400 block uppercase">Total Odo</span>
-                  <span className="text-zinc-200 font-bold">
-                    {trip.totalOdometer.toLocaleString()} {vehicleConfig.distanceUnit}
-                  </span>
+                  <span className="text-[10px] text-zinc-400 block uppercase">Change</span>
+                  {trip.isFirstEntry ? (
+                    <span className="text-zinc-400 italic">Baseline</span>
+                  ) : (() => {
+                    const currentIndex = computedTripEntries.findIndex(t => t.id === trip.id);
+                    const prevIndex = currentIndex - 1;
+                    if (prevIndex >= 0) {
+                      const prevOdo = computedTripEntries[prevIndex].totalOdometer;
+                      const change = trip.totalOdometer - prevOdo;
+                      if (change > 0) {
+                        return (
+                          <span className="text-emerald-400 font-bold">
+                            +{change.toLocaleString()} {vehicleConfig.distanceUnit}
+                          </span>
+                        );
+                      } else if (change < 0) {
+                        return (
+                          <span className="text-rose-400 font-bold">
+                            {change.toLocaleString()} {vehicleConfig.distanceUnit}
+                          </span>
+                        );
+                      } else {
+                        return (
+                          <span className="text-zinc-400">0 {vehicleConfig.distanceUnit}</span>
+                        );
+                      }
+                    }
+                    return <span className="text-zinc-400 italic">—</span>;
+                  })()}
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-zinc-400 block uppercase">7-Day Rolling</span>

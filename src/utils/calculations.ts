@@ -155,11 +155,13 @@ export function getAggregatedFuelStats(
 /**
  * Computes Daily Trip Log entries according to §6.2.
  * Uses cumulative total odometer; calculates kmDrivenToday = odo(today) - odo(previous logged day).
+ * For fuel range type vehicles: when reading decreases, it means fuel was consumed (not odometer rollover).
  * Calculates 7-day rolling average over the last 7 *logged* days.
  */
 export function computeTripEntries(
   trips: TripEntry[],
-  liveAvgCostPerKm: number
+  liveAvgCostPerKm: number,
+  odometerType: 'cumulative' | 'fuelRange' = 'cumulative'
 ): ComputedTripEntry[] {
   // Sort chronologically ascending
   const sorted = [...trips].sort(
@@ -178,7 +180,23 @@ export function computeTripEntries(
       kmDrivenToday = 0;
     } else {
       const prev = sorted[i - 1];
-      kmDrivenToday = Math.max(0, current.totalOdometer - prev.totalOdometer);
+
+      if (odometerType === 'fuelRange') {
+        // For fuel range: increase means refuel (no distance), decrease means driving
+        if (current.totalOdometer > prev.totalOdometer) {
+          // Fuel range increased - this is a refill, no distance driven
+          kmDrivenToday = 0;
+        } else if (current.totalOdometer < prev.totalOdometer) {
+          // Fuel range decreased - calculate distance driven
+          kmDrivenToday = prev.totalOdometer - current.totalOdometer;
+        } else {
+          // Same range - no driving
+          kmDrivenToday = 0;
+        }
+      } else {
+        // For cumulative odometer: standard calculation
+        kmDrivenToday = Math.max(0, current.totalOdometer - prev.totalOdometer);
+      }
     }
 
     // 7-day rolling average over last 7 logged days (including this day, excluding initial 0-diff first entry if multiple)

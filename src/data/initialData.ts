@@ -26,6 +26,7 @@ export const createDefaultVehicle = (partial?: Partial<VehicleConfig>): VehicleC
   volumeUnit: partial?.volumeUnit || 'L',
   targetEfficiency: partial?.targetEfficiency || 14.5,
   currentFuelPrice: partial?.currentFuelPrice || 106.5,
+  odometerType: partial?.odometerType || 'cumulative', // 'cumulative' = real mileage, 'fuelRange' = distance-to-empty
   createdAt: new Date().toISOString(),
 });
 

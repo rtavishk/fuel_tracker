@@ -73,8 +73,7 @@ export const Login: React.FC<LoginProps> = ({ onSwitchToRegister, onBackToLandin
 
       // Check if response is JSON before parsing
       const contentType = response.headers.get('content-type');
-      console.log('Login response status:', response.status, 'content-type:', contentType);
-      
+
       if (!contentType || !contentType.includes('application/json')) {
         // Get response text for debugging
         const text = await response.text();

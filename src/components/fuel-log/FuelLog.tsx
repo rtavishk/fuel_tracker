@@ -77,6 +77,7 @@ export const FuelLog: React.FC = () => {
 
           <button
             id="btn-add-fillup"
+            type="button"
             onClick={handleOpenAdd}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 hover:from-emerald-300 hover:to-teal-300 text-black text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
           >
@@ -99,6 +100,7 @@ export const FuelLog: React.FC = () => {
               </p>
             </div>
             <button
+              type="button"
               onClick={handleOpenAdd}
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-300 hover:to-teal-400 text-black font-bold text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/25 transition-all cursor-pointer"
             >
@@ -131,6 +133,7 @@ export const FuelLog: React.FC = () => {
 
         <button
           id="btn-add-fillup"
+          type="button"
           onClick={handleOpenAdd}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 hover:from-emerald-300 hover:to-teal-300 text-black text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
         >

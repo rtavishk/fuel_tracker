@@ -79,22 +79,11 @@ export async function POST(req: NextRequest) {
     const odo = body.totalCumulativeOdometer ?? body.totalOdometer ?? 0;
 
     if (prisma) {
-      const trip = await prisma.tripEntry.upsert({
-        where: {
-          vehicleId_date: {
-            vehicleId: body.vehicleId,
-            date: new Date(body.date),
-          },
-        },
-        create: {
+      const trip = await prisma.tripEntry.create({
+        data: {
           userId: user.id,
           vehicleId: body.vehicleId,
           date: new Date(body.date),
-          totalCumulativeOdometer: odo,
-          category: body.category || 'Commute',
-          notes: body.notes || null,
-        },
-        update: {
           totalCumulativeOdometer: odo,
           category: body.category || 'Commute',
           notes: body.notes || null,

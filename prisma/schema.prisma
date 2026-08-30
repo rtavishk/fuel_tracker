@@ -96,7 +96,6 @@ model TripEntry {
   profile                 Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle                 Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
-  @@unique([vehicleId, date])
   @@index([userId, vehicleId, date(sort: Asc)])
   @@map("trip_entries")
 }

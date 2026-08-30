@@ -309,6 +309,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setActiveVehicleId(currentId);
           }
 
+          // Set fuel price from the active vehicle's data
+          const activeVehicleData = dbVehicles.find((v) => v.id === currentId);
+          if (activeVehicleData && activeVehicleData.currentFuelPrice) {
+            setCurrentFuelPrice(activeVehicleData.currentFuelPrice);
+          }
+
           const [dbFuel, dbTrips, dbMaint] = await Promise.all([
             api.getFuelEntries(currentId),
             api.getTripEntries(currentId),

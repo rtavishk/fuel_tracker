@@ -662,8 +662,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setTripEntries((prev) => {
-      const filtered = prev.filter((t) => t.date !== entryData.date);
-      return [...filtered, newEntry].sort(
+      return [...prev, newEntry].sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       );
     });

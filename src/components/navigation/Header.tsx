@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { AddVehicleModal } from '../garage/AddVehicleModal';
 import { UserAvatar } from '../common/UserAvatar';
+import { APP_VERSION } from '../../lib/version';
 
 export const Header: React.FC = () => {
   const {
@@ -210,7 +211,7 @@ export const Header: React.FC = () => {
                   {user.name}
                 </span>
                 <span className="text-[9.5px] font-mono text-emerald-400 leading-tight">
-                  {user.driverTier || 'Driver'}
+                  v{APP_VERSION} • {user.driverTier || 'Driver'}
                 </span>
               </div>
             </button>

@@ -12,6 +12,7 @@ import {
   Sliders,
   DollarSign,
 } from 'lucide-react';
+import { APP_VERSION, APP_NAME } from '../../lib/version';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -285,7 +286,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
 
       {/* Minimal Footer */}
       <footer className="border-t border-zinc-800/80 py-5 px-4 text-center text-[11px] text-zinc-500 font-mono">
-        <span>FuelPulse Telemetry • Built for Drivers • PostgreSQL Database Synced</span>
+        <span>{APP_NAME} v{APP_VERSION} • Built for Drivers • PostgreSQL Database Synced</span>
       </footer>
     </div>
   );

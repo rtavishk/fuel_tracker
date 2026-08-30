@@ -35,15 +35,16 @@ export async function GET(req: NextRequest) {
     }
 
     const prisma = prismaClient;
-    if (prisma) {
-      const vehicles = await prisma.vehicle.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: 'desc' },
-      });
-      return NextResponse.json({ vehicles });
+    if (!prisma) {
+      console.warn('Prisma client not available in GET /api/vehicles');
+      return NextResponse.json({ vehicles: [] });
     }
 
-    return NextResponse.json({ vehicles: [] });
+    const vehicles = await prisma.vehicle.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    return NextResponse.json({ vehicles });
   } catch (error) {
     console.error('List vehicles error:', error);
     return NextResponse.json({ error: 'Failed to fetch vehicles' }, { status: 500 });
@@ -59,33 +60,34 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const prisma = prismaClient;
-
-    if (prisma) {
-      const newVehicle = await prisma.vehicle.create({
-        data: {
+    
+    if (!prisma) {
+      console.warn('Prisma client not available in POST /api/vehicles');
+      return NextResponse.json({
+        vehicle: {
+          id: uuidv4(),
           userId: user.id,
-          name: body.name,
-          make: body.make,
-          model: body.model,
-          year: body.year,
-          licensePlate: body.licensePlate || null,
-          tankCapacityLitres: body.tankCapacityLitres,
-          fullRangeBenchmarkKm: body.fullRangeBenchmarkKm,
-          currentCumulativeOdometer: body.currentCumulativeOdometer || 0,
-          fuelType: body.fuelType || 'Petrol (95)',
-          isPrimary: body.isPrimary ?? false,
+          ...body,
         },
-      });
-      return NextResponse.json({ vehicle: newVehicle }, { status: 201 });
+      }, { status: 201 });
     }
 
-    return NextResponse.json({
-      vehicle: {
-        id: uuidv4(),
+    const newVehicle = await prisma.vehicle.create({
+      data: {
         userId: user.id,
-        ...body,
+        name: body.name,
+        make: body.make,
+        model: body.model,
+        year: body.year,
+        licensePlate: body.licensePlate || null,
+        tankCapacityLitres: body.tankCapacityLitres,
+        fullRangeBenchmarkKm: body.fullRangeBenchmarkKm,
+        currentCumulativeOdometer: body.currentCumulativeOdometer || 0,
+        fuelType: body.fuelType || 'Petrol (95)',
+        isPrimary: body.isPrimary ?? false,
       },
-    }, { status: 201 });
+    });
+    return NextResponse.json({ vehicle: newVehicle }, { status: 201 });
   } catch (error) {
     console.error('Create vehicle error:', error);
     return NextResponse.json({ error: 'Failed to create vehicle' }, { status: 500 });

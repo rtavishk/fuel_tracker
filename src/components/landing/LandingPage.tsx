@@ -285,8 +285,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
       </main>
 
       {/* Minimal Footer */}
-      <footer className="border-t border-zinc-800/80 py-5 px-4 text-center text-[11px] text-zinc-500 font-mono">
-        <span>{APP_NAME} v{APP_VERSION} • Built for Drivers • PostgreSQL Database Synced</span>
+      <footer className="border-t border-zinc-800/80 py-5 px-4 text-center text-[11px] text-zinc-400 font-mono bg-[#09090b]">
+        <span className="inline-block text-zinc-300">{APP_NAME} v{APP_VERSION} • Built for Drivers • PostgreSQL Database Synced</span>
       </footer>
     </div>
   );

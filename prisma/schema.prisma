@@ -44,6 +44,7 @@ model Vehicle {
   fullRangeBenchmarkKm      Float                  @default(680.0) @map("full_range_benchmark_km")
   currentCumulativeOdometer Float                  @default(0.0) @map("current_cumulative_odometer")
   fuelType                  String                 @default("Petrol (95)") @map("fuel_type")
+  currentFuelPrice          Float?                 @default(106.5) @map("current_fuel_price")
   isPrimary                 Boolean                @default(true) @map("is_primary")
   createdAt                 DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)

@@ -447,7 +447,7 @@ export const FuelLog: React.FC = () => {
                       {entry.isPending ? 'Pending' : 'Completed'}
                     </Badge>
                   </div>
-                  <p className="text-xs text-zinc-400">{entry.fuelStation || 'Station not logged'}</p>
+                  <p className="text-xs text-zinc-400">{entry.fuelStation || entry.pricePerLitre ? `@ ${entry.pricePerLitre.toFixed(2)}/${vehicleConfig.volumeUnit}` : 'Station not logged'}</p>
                 </div>
                 <div className="text-right font-mono">
                   <div className="font-black text-emerald-400 text-sm">
@@ -463,28 +463,28 @@ export const FuelLog: React.FC = () => {
                 <div>
                   <span className="text-[10px] text-zinc-400 block uppercase">Economy</span>
                   <span className="text-xs font-bold text-white">
-                    {entry.fuelEconomy ? `${entry.fuelEconomy.toFixed(1)} km/L` : '—'}
+                    {entry.fuelEconomy ? `${entry.fuelEconomy.toFixed(1)} ${vehicleConfig.distanceUnit}/${vehicleConfig.volumeUnit}` : '—'}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-zinc-400 block uppercase">Cost/km</span>
                   <span className="text-xs font-bold text-amber-400">
-                    {entry.costPerKm ? `${vehicleConfig.currency}${entry.costPerKm.toFixed(2)}` : '—'}
+                    {entry.costPerKm ? `${vehicleConfig.currency || 'Rs.'} ${entry.costPerKm.toFixed(2)}` : '—'}
                   </span>
                 </div>
                 <div>
                   <span className="text-[10px] text-zinc-400 block uppercase">Distance Added</span>
                   <span className="text-xs font-bold text-teal-400">
-                    {entry.distanceThisFill && entry.distanceThisFill > 0 ? `+${entry.distanceThisFill} km` : '—'}
+                    {entry.distanceThisFill && entry.distanceThisFill > 0 ? `+${entry.distanceThisFill} ${vehicleConfig.distanceUnit}` : '—'}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-1 text-xs">
                 <div className="flex items-center gap-1.5 text-zinc-400 font-mono text-[11px]">
-                  <span>Gauge: {entry.currentOdometer}</span>
+                  <span>Gauge: {entry.currentOdometer} {vehicleConfig.distanceUnit}</span>
                   <ArrowRight className="w-3 h-3 text-zinc-600" />
-                  <span className="text-white font-bold">{entry.afterFuelingOdometer || 'Pending'}</span>
+                  <span className="text-white font-bold">{entry.afterFuelingOdometer || 'Pending'} {vehicleConfig.distanceUnit}</span>
                 </div>
 
                 <div className="flex items-center gap-1">

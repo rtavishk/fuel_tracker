@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
           userId: user.id,
           ...(vehicleId ? { vehicleId } : {}),
         },
-        orderBy: { date: 'asc' },
+        orderBy: { createdAt: 'desc' },
       });
 
       const mappedTrips = trips.map((t) => ({

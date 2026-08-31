@@ -32,24 +32,30 @@ export const Dashboard: React.FC = () => {
     fullRangeBenchmark,
   } = useApp();
 
-  // Current distance-to-empty reading from latest pre-trip, fuel entry, or estimate
+  // Current distance-to-empty reading from latest pre-trip, fuel entry, trip entry, or estimate
   const currentRangeGauge =
     computedPreTripEntries.length > 0
       ? computedPreTripEntries[0].currentOdometer
       : computedFuelEntries.length > 0 && computedFuelEntries[0].afterFuelingOdometer
       ? computedFuelEntries[0].afterFuelingOdometer
+      : displayTrips.length > 0
+      ? displayTrips[0].totalOdometer // Use latest trip entry as fallback (newest)
       : null; // Return null instead of hardcoded 340
 
   // Real cumulative vehicle odometer from trip log
   const cumulativeOdometer =
     computedTripEntries.length > 0
-      ? computedTripEntries[0].totalOdometer
+      ? computedTripEntries[computedTripEntries.length - 1].totalOdometer
       : vehicleConfig.currentCumulativeOdometer;
 
+  // Since computedTripEntries is now chronological (oldest first), reverse for display
+  const chronologicalTrips = computedTripEntries;
+  const displayTrips = [...chronologicalTrips].reverse();
+
   // Calculate total distance driven by summing all negative changes (odometer decreases)
-  const totalDistanceDriven = computedTripEntries.reduce((sum, trip, index) => {
+  const totalDistanceDriven = chronologicalTrips.reduce((sum, trip, index) => {
     if (index === 0) return sum;
-    const prevOdo = computedTripEntries[index - 1].totalOdometer;
+    const prevOdo = chronologicalTrips[index - 1].totalOdometer;
     const change = trip.totalOdometer - prevOdo;
     // Only add negative changes (driving) as positive distance
     return change < 0 ? sum + Math.abs(change) : sum;
@@ -119,7 +125,7 @@ export const Dashboard: React.FC = () => {
                 currentRangeKm={currentRangeGauge}
                 benchmarkFullKm={fullRangeBenchmark}
                 unit={vehicleConfig.distanceUnit}
-                subLabel="Distance-to-Empty"
+                subLabel={vehicleConfig.odometerType === 'fuelRange' ? 'Current Fuel Range' : 'Distance-to-Empty'}
                 size={230}
               />
             ) : (
@@ -197,8 +203,8 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className="flex items-baseline gap-1 font-mono">
               <span className="text-2xl sm:text-3xl font-black text-white">
-                {computedTripEntries.length > 0
-                  ? computedTripEntries[computedTripEntries.length - 1].totalOdometer.toLocaleString()
+                {displayTrips.length > 0
+                  ? displayTrips[0].totalOdometer.toLocaleString()
                   : cumulativeOdometer.toLocaleString()}
               </span>
               <span className="text-xs font-semibold text-teal-400 font-sans">
@@ -206,8 +212,8 @@ export const Dashboard: React.FC = () => {
               </span>
             </div>
             <p className="text-[11px] text-zinc-400 mt-1">
-              {computedTripEntries.length > 0
-                ? `Latest: ${computedTripEntries[computedTripEntries.length - 1].date}`
+              {displayTrips.length > 0
+                ? `Latest: ${displayTrips[0].date}`
                 : 'No trip entries yet'}
             </p>
           </Card>
@@ -266,20 +272,20 @@ export const Dashboard: React.FC = () => {
           </Badge>
         </div>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={computedTripEntries.slice(-20)}>
+          <LineChart data={chronologicalTrips.slice(-20)}>
             <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis 
-              dataKey="date" 
-              stroke="#666" 
+            <XAxis
+              dataKey="date"
+              stroke="#666"
               fontSize={10}
               tickFormatter={(value) => value.slice(5)}
             />
-            <YAxis 
-              stroke="#666" 
+            <YAxis
+              stroke="#666"
               fontSize={10}
               tickFormatter={(value) => value.toLocaleString()}
             />
-            <Tooltip 
+            <Tooltip
               contentStyle={{ backgroundColor: '#121215', border: '1px solid #333', borderRadius: '8px' }}
               labelStyle={{ color: '#fff' }}
               itemStyle={{ color: '#10b981' }}
@@ -293,10 +299,10 @@ export const Dashboard: React.FC = () => {
                 ];
               }}
             />
-            <Line 
-              type="monotone" 
-              dataKey="totalOdometer" 
-              stroke="#10b981" 
+            <Line
+              type="monotone"
+              dataKey="totalOdometer"
+              stroke="#10b981"
               strokeWidth={2}
               dot={{ fill: '#10b981', r: 4 }}
               activeDot={{ r: 6 }}

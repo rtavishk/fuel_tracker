@@ -1,3 +1,3 @@
-export const APP_VERSION = "1.8";
+export const APP_VERSION = "1.9";
 export const APP_NAME = "FuelTracker";
-export const NEXT_VERSION = "1.9";
+export const NEXT_VERSION = "1.10";

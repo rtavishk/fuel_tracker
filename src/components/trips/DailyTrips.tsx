@@ -42,13 +42,15 @@ export const DailyTrips: React.FC = () => {
       ? computedTripEntries[0].totalOdometer
       : vehicleConfig.currentCumulativeOdometer;
 
+  // Since computedTripEntries is now chronological (oldest first), we don't need to reverse for calculations
+  const chronologicalTrips = computedTripEntries;
   const latest7DayAvg =
-    computedTripEntries.length > 0 ? computedTripEntries[0].sevenDayRollingAvg : 0;
+    chronologicalTrips.length > 0 ? chronologicalTrips[chronologicalTrips.length - 1].sevenDayRollingAvg : 0;
 
   // Calculate total distance driven by summing all negative changes (odometer decreases)
-  const totalDistanceDriven = computedTripEntries.reduce((sum, trip, index) => {
+  const totalDistanceDriven = chronologicalTrips.reduce((sum, trip, index) => {
     if (index === 0) return sum;
-    const prevOdo = computedTripEntries[index - 1].totalOdometer;
+    const prevOdo = chronologicalTrips[index - 1].totalOdometer;
     const change = trip.totalOdometer - prevOdo;
     // Only add negative changes (driving) as positive distance
     return change < 0 ? sum + Math.abs(change) : sum;
@@ -201,7 +203,7 @@ export const DailyTrips: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/80 font-medium text-zinc-200">
-              {computedTripEntries.map((trip) => (
+              {chronologicalTrips.reverse().map((trip) => (
                 <tr key={trip.id} className="hover:bg-zinc-900/40 transition-colors group">
                   {/* Date */}
                   <td className="py-3.5 px-4 font-semibold text-white">{trip.date}</td>
@@ -216,11 +218,11 @@ export const DailyTrips: React.FC = () => {
                     {trip.isFirstEntry ? (
                       <span className="text-zinc-500 italic">Baseline entry</span>
                     ) : (() => {
-                      const currentIndex = computedTripEntries.findIndex(t => t.id === trip.id);
-                      const prevIndex = currentIndex - 1;
-                      if (prevIndex >= 0) {
-                        const prevOdo = computedTripEntries[prevIndex].totalOdometer;
-                        const change = trip.totalOdometer - prevOdo;
+                      const currentIndex = chronologicalTrips.findIndex(t => t.id === trip.id);
+                      const nextIndex = currentIndex + 1;
+                      if (nextIndex < chronologicalTrips.length) {
+                        const nextOdo = chronologicalTrips[nextIndex].totalOdometer;
+                        const change = nextOdo - trip.totalOdometer;
                         if (change > 0) {
                           return (
                             <span className="font-bold text-emerald-400">
@@ -309,7 +311,7 @@ export const DailyTrips: React.FC = () => {
 
         {/* Mobile View */}
         <div className="md:hidden divide-y divide-zinc-800">
-          {computedTripEntries.map((trip) => (
+          {chronologicalTrips.reverse().map((trip) => (
             <div key={trip.id} className="p-4 space-y-2.5">
               <div className="flex items-start justify-between">
                 <div>
@@ -345,11 +347,11 @@ export const DailyTrips: React.FC = () => {
                   {trip.isFirstEntry ? (
                     <span className="text-zinc-400 italic">Baseline</span>
                   ) : (() => {
-                    const currentIndex = computedTripEntries.findIndex(t => t.id === trip.id);
-                    const prevIndex = currentIndex - 1;
-                    if (prevIndex >= 0) {
-                      const prevOdo = computedTripEntries[prevIndex].totalOdometer;
-                      const change = trip.totalOdometer - prevOdo;
+                    const currentIndex = chronologicalTrips.findIndex(t => t.id === trip.id);
+                    const nextIndex = currentIndex + 1;
+                    if (nextIndex < chronologicalTrips.length) {
+                      const nextOdo = chronologicalTrips[nextIndex].totalOdometer;
+                      const change = nextOdo - trip.totalOdometer;
                       if (change > 0) {
                         return (
                           <span className="text-emerald-400 font-bold">

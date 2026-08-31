@@ -163,10 +163,14 @@ export function computeTripEntries(
   liveAvgCostPerKm: number,
   odometerType: 'cumulative' | 'fuelRange' = 'cumulative'
 ): ComputedTripEntry[] {
-  // Sort chronologically ascending
-  const sorted = [...trips].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
+  // The API returns data ordered by createdAt desc (newest first)
+  // We need to sort it chronologically ascending (oldest first)
+  const sorted = [...trips].sort((a, b) => {
+    const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (dateCompare !== 0) return dateCompare;
+    // If dates are the same, sort by createdAt ascending (oldest first)
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
 
   const computedAsc: ComputedTripEntry[] = [];
 
